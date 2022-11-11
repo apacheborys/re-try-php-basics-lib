@@ -1,0 +1,7 @@
+version: '3.3'
+services:
+  re-try-basics:
+    build: "docker-image"
+    tty: true
+    volumes:
+      - .:/code
