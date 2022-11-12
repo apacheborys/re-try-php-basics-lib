@@ -9,6 +9,8 @@ use PHPUnit\Framework\TestCase;
 
 class CommandExecutorTest extends TestCase
 {
+    private const FILE_NAME = __DIR__ . DIRECTORY_SEPARATOR . 'execution_report.data';
+
     public function testHandle(): void
     {
         $start = time();
@@ -25,18 +27,24 @@ class CommandExecutorTest extends TestCase
             CommandExecutor::class
         );
 
-        self::expectException(\Exception::class);
         $executor->handle($message);
 
-        $fp = fopen(__DIR__ . DIRECTORY_SEPARATOR . 'execution_report.data', 'w');
+        $fp = fopen(self::FILE_NAME, 'r');
         $data = [];
         while ($buffer = fgets($fp)) {
-            $data[] = json_decode($buffer);
+            $data[] = json_decode($buffer, true);
         }
 
         fclose($fp);
 
         self::assertCount(1, $data);
-        self::greaterThanOrEqual($datap['']);
+        self::assertTrue((new \DateTime($data[0]['execution time']))->getTimestamp() >= $start);
+    }
+
+    public static function tearDownAfterClass(): void
+    {
+        if (file_exists(self::FILE_NAME)) {
+            unlink(self::FILE_NAME);
+        }
     }
 }

@@ -11,5 +11,3 @@ $data = [
 
 fwrite($fp, json_encode($data) . PHP_EOL);
 fclose($fp);
-
-throw new Exception('test exception');
