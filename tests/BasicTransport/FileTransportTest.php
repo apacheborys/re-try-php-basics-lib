@@ -16,28 +16,44 @@ class FileTransportTest extends TestCase
     {
         $ft = new FileTransport(self::FILE_DB);
 
-        $message = new Message(
-            $ft->getNextId($this->createMock(\Throwable::class), $this->createMock(Config::class)),
-            'Unit test',
-            'Some random id',
-            [],
-            0,
-            false,
-            new \DateTimeImmutable(),
-            'Fake executor class'
-        );
+        $message1 = $this->generateMessage($ft);
 
-        $ft->send($message);
+        $ft->send($message1);
 
         self::assertTrue(file_exists(self::FILE_DB));
+
+        $messages = $this->getMessagesFromFileDb();
+
+        self::assertCount(1, $messages);
+        self::assertSame($message1->getId(), $messages[0]->getId());
+    }
+
+    /**
+     * @return Message[]
+     */
+    private function getMessagesFromFileDb(): array
+    {
         $fileData = explode(PHP_EOL, file_get_contents(self::FILE_DB));
-        self::assertCount(1, $fileData);
 
         $messages = [];
         foreach ($fileData as $rawMessage) {
             $messages[] = Message::fromArray(json_decode($rawMessage, true));
         }
 
-        self::assertSame($message->getId(), $messages[0]->getId());
+        return $messages;
+    }
+
+    private function generateMessage(FileTransport $ft): Message
+    {
+        return new Message(
+            $ft->getNextId($this->createMock(\Throwable::class), $this->createMock(Config::class)),
+            'Unit test',
+            'correlation-id',
+            [],
+            0,
+            false,
+            new \DateTimeImmutable(),
+            'Fake executor class'
+        );
     }
 }
