@@ -30,7 +30,8 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "ApacheBorys\\Retry\\BasicExecutor\\Tests\\": "tests/BasicExecutor"
+            "ApacheBorys\\Retry\\BasicExecutor\\Tests\\": "tests/BasicExecutor",
+            "ApacheBorys\\Retry\\BasicTransport\\Tests\\": "tests/BasicTransport"
         }
     }
 }

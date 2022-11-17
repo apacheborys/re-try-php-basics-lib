@@ -9,20 +9,6 @@ use ApacheBorys\Retry\Interfaces\Transport;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 
-/**
- * @method send(Message $message): bool
- * @see self::_send
- * @method getMessages(int $limit = 100, int $offset = 0, bool $byStream = false): iterable
- * @see self::_getMessages
- * @method howManyTriesWasBefore(\Throwable $exception, Config $config): int
- * @see self::_howManyTriesWasBefore
- * @method getNextId(\Throwable $exception, Config $config): string
- * @see self::_getNextId
- * @method fetchUnprocessedMessages(int $batchSize = -1): ?iterable
- * @see self::_fetchUnprocessedMessages
- * @method markMessageAsProcessed(Message $message): bool
- * @see self::_markMessageAsProcessed
- */
 class FileTransport implements Transport
 {
     private const MINIMUM_INDEX_TTL = 60;
@@ -59,23 +45,15 @@ class FileTransport implements Transport
         $this->subscribeToFileStorageChanges();
     }
 
-    /**
-     * Overlap for methods
-     * @see _send, _getMessages, _howManyTriesWasBefore, _getNextId, _fetchUnprocessedMessages, _markMessageAsProcessed
-     */
-    public function __call($name, $arguments)
+    public function send(Message $message): bool
     {
         if ($this->isFileStorageChanged()) {
             $this->createIndex();
         }
 
-        $this->{'_' . $name}(...$arguments);
-    }
-
-    private function _send(Message $message): bool
-    {
         try {
             fseek($this->fp, 0, SEEK_END);
+            $position = ftell($this->fp);
             fwrite($this->fp, $message . PHP_EOL);
             fflush($this->fp);
         } catch (\Throwable $e) {
@@ -83,34 +61,42 @@ class FileTransport implements Transport
             throw $e;
         }
 
+        $this->addToIndex($message, $position - 1);
+
         return true;
     }
 
-    private function _fetchUnprocessedMessages(int $batchSize = -1): ?iterable
+    public function fetchUnprocessedMessages(int $batchSize = -1): ?iterable
     {
+        if ($this->isFileStorageChanged()) {
+            $this->createIndex();
+        }
+
         $returnedItems = 0;
 
-        foreach ($this->fileIndexProcessed[false] as $idToPos) {
-            foreach ($idToPos as $position) {
-                fseek($this->fp, $position);
-                $rawMessage = fgets($this->fp);
+        foreach ($this->fileIndexProcessed[false] as $position) {
+            fseek($this->fp, $position);
+            $rawMessage = fgets($this->fp);
 
-                $message = Message::fromArray(json_decode($rawMessage, true,512, JSON_THROW_ON_ERROR));
+            $message = Message::fromArray(json_decode($rawMessage, true,512, JSON_THROW_ON_ERROR));
 
-                if (!$message->getIsProcessed()) {
-                    yield $message;
-                    $returnedItems++;
-                }
+            if (!$message->getIsProcessed()) {
+                yield $message;
+                $returnedItems++;
+            }
 
-                if ($batchSize != -1 && $returnedItems >= $batchSize) {
-                    return;
-                }
+            if ($batchSize != -1 && $returnedItems >= $batchSize) {
+                return;
             }
         }
     }
 
-    private function _getNextId(\Throwable $exception, Config $config): string
+    public function getNextId(\Throwable $exception, Config $config): string
     {
+        if ($this->isFileStorageChanged()) {
+            $this->createIndex();
+        }
+
         return sprintf( '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
             mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff ),
             mt_rand( 0, 0xffff ),
@@ -120,8 +106,12 @@ class FileTransport implements Transport
         );
     }
 
-    private function _getMessages(int $limit = 100, int $offset = 0, bool $byStream = false): iterable
+    public function getMessages(int $limit = 100, int $offset = 0, bool $byStream = false): iterable
     {
+        if ($this->isFileStorageChanged()) {
+            $this->createIndex();
+        }
+
         fseek($this->fp, 0);
 
         $result = [];
@@ -150,15 +140,23 @@ class FileTransport implements Transport
         }
     }
 
-    private function _howManyTriesWasBefore(\Throwable $exception, Config $config): int
+    public function howManyTriesWasBefore(\Throwable $exception, Config $config): int
     {
+        if ($this->isFileStorageChanged()) {
+            $this->createIndex();
+        }
+
         $correlationId = $config->getExecutor()->getCorrelationId($exception, $config);
 
         return isset($this->fileIndexPosition[$correlationId]) ? max(array_keys($this->fileIndexPosition[$correlationId])) : 0;
     }
 
-    private function _markMessageAsProcessed(Message $message): bool
+    public function markMessageAsProcessed(Message $message): bool
     {
+        if ($this->isFileStorageChanged()) {
+            $this->createIndex();
+        }
+
         $tempFile = tempnam(sys_get_temp_dir(), self::PREFIX_FOR_TEMP_FILE . '.data');
         $tfp = fopen($tempFile, 'w');
 
@@ -195,7 +193,7 @@ class FileTransport implements Transport
         rename($tempFile, $this->fileStorage);
 
         $this->openFileStorage();
-        $this->addToIndex($message, $position);
+        $this->addToIndex($message, $position - 1);
 
         return true;
     }
@@ -218,10 +216,10 @@ class FileTransport implements Transport
 
         fseek($this->fp, 0);
 
-        $previous = 0;
+        $previous = 1;
         while ($rawMessage = fgets($this->fp)) {
             $message = Message::fromArray(json_decode($rawMessage, true,512, JSON_THROW_ON_ERROR));
-            $this->addToIndex($message, $previous);
+            $this->addToIndex($message, $previous - 1);
             $previous = ftell($this->fp);
         }
 
@@ -246,7 +244,6 @@ class FileTransport implements Transport
 
     private function unsubscribeToFileStorageChanges(): void
     {
-        inotify_rm_watch($this->fd, $this->watchDescriptor);
         fclose($this->fd);
     }
 
