@@ -18,10 +18,10 @@ class FileTransport implements Transport
     private string $fileStorage;
 
     /** Index for messages correlation id -> try counter -> position in the file  */
-    private array $fileIndexPosition;
+    private array $fileIndexPosition = [];
 
     /** Index for messages processed status -> message id -> position in the file */
-    private array $fileIndexProcessed;
+    private array $fileIndexProcessed = [];
 
     private ?LoggerInterface $logger;
 
@@ -30,8 +30,6 @@ class FileTransport implements Transport
 
     /** @var resource */
     private $fd;
-
-    private int $watchDescriptor;
 
     private int $timeOfCreationIndex = 0;
 
@@ -74,7 +72,7 @@ class FileTransport implements Transport
 
         $returnedItems = 0;
 
-        foreach ($this->fileIndexProcessed[false] as $position) {
+        foreach ($this->fileIndexProcessed[0] as $position) {
             fseek($this->fp, $position);
             $rawMessage = fgets($this->fp);
 
@@ -148,7 +146,9 @@ class FileTransport implements Transport
 
         $correlationId = $config->getExecutor()->getCorrelationId($exception, $config);
 
-        return isset($this->fileIndexPosition[$correlationId]) ? max(array_keys($this->fileIndexPosition[$correlationId])) : 0;
+        $keysFromIndex = array_keys($this->fileIndexPosition[$correlationId]);
+
+        return isset($this->fileIndexPosition[$correlationId]) && count($keysFromIndex) > 0 ? max($keysFromIndex) : 0;
     }
 
     public function markMessageAsProcessed(Message $message): bool
@@ -187,6 +187,7 @@ class FileTransport implements Transport
         }
 
         fclose($tfp);
+        /** @psalm-suppress InvalidPropertyAssignmentValue */
         fclose($this->fp);
 
         unlink($this->fileStorage);
@@ -234,7 +235,6 @@ class FileTransport implements Transport
 
         $this->fd = inotify_init();
         stream_set_blocking($this->fd, false);
-        $this->watchDescriptor = inotify_add_watch($this->fd, $this->fileStorage, IN_MODIFY | IN_CLOSE_WRITE);
     }
 
     private function isFileStorageChanged(): bool
@@ -244,6 +244,7 @@ class FileTransport implements Transport
 
     private function unsubscribeToFileStorageChanges(): void
     {
+        /** @psalm-suppress InvalidPropertyAssignmentValue */
         fclose($this->fd);
     }
 
@@ -251,10 +252,13 @@ class FileTransport implements Transport
     {
         $this->fileIndexPosition[$message->getCorrelationId()][$message->getTryCounter()] = $position;
 
-        if ($message->getIsProcessed() && isset($this->fileIndexProcessed[false][$message->getId()])) {
-            unset($this->fileIndexProcessed[!$message->getIsProcessed()][$message->getId()]);
+        if ($message->getIsProcessed()
+            && isset($this->fileIndexProcessed[0])
+            && isset($this->fileIndexProcessed[0][$message->getId()])
+        ) {
+            unset($this->fileIndexProcessed[0][$message->getId()]);
         }
-        $this->fileIndexProcessed[$message->getIsProcessed()][$message->getId()] = $position;
+        $this->fileIndexProcessed[(int) $message->getIsProcessed()][$message->getId()] = $position;
     }
 
     private function logError(string $message, array $arguments = [], string $level = LogLevel::ERROR): void

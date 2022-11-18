@@ -15,6 +15,12 @@ class FileTransportTest extends TestCase
 
     private const TEST_CORRELATION_ID = 'correlation-id-2';
 
+    /**
+     * @covers FileTransport::send
+     * @covers FileTransport::markMessageAsProcessed
+     * @covers FileTransport::howManyTriesWasBefore
+     * @covers FileTransport::fetchUnprocessedMessages
+     */
     public function testFlow(): void
     {
         $ft = new FileTransport(self::FILE_DB);

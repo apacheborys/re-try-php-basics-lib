@@ -12,7 +12,8 @@
     "require": {
         "php": "^7.4||^8.0",
         "apacheborys/re-try-php": "*",
-        "psr/log": "^1.1"
+        "psr/log": "^1.1",
+        "ext-json": "*"
     },
     "require-dev": {
         "phpunit/phpunit": "9.5.21",

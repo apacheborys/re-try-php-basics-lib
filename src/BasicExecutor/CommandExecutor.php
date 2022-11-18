@@ -101,7 +101,7 @@ class CommandExecutor implements Executor
             $config->getTransport()->getNextId($exception, $config);
         }
 
-        return $id;
+        return (string) $id;
     }
 
     private function compileArguments(Message $message): string
@@ -134,11 +134,11 @@ class CommandExecutor implements Executor
 
     private function rollbackEnvironmentVariables(): void
     {
-        foreach ($this->envVariablesSnapshot as $varName => $value) {
+        foreach ($this->envVariablesSnapshot ?? [] as $varName => $value) {
             putenv($varName . '=' . $value);
         }
 
-        $envVarsToUnset = array_diff_assoc($this->environmentVars, $this->envVariablesSnapshot);
+        $envVarsToUnset = array_diff_assoc($this->environmentVars, $this->envVariablesSnapshot ?? []);
 
         foreach ($envVarsToUnset as $varName => $value) {
             putenv($varName);
