@@ -45,9 +45,7 @@ class FileTransport implements Transport
 
     public function send(Message $message): bool
     {
-        if ($this->isFileStorageChanged()) {
-            $this->createIndex();
-        }
+        $this->_beforeMethodExec();
 
         try {
             fseek($this->fp, 0, SEEK_END);
@@ -66,9 +64,7 @@ class FileTransport implements Transport
 
     public function fetchUnprocessedMessages(int $batchSize = -1): ?iterable
     {
-        if ($this->isFileStorageChanged()) {
-            $this->createIndex();
-        }
+        $this->_beforeMethodExec();
 
         $returnedItems = 0;
 
@@ -91,9 +87,7 @@ class FileTransport implements Transport
 
     public function getNextId(\Throwable $exception, Config $config): string
     {
-        if ($this->isFileStorageChanged()) {
-            $this->createIndex();
-        }
+        $this->_beforeMethodExec();
 
         return sprintf( '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
             mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff ),
@@ -106,9 +100,7 @@ class FileTransport implements Transport
 
     public function getMessages(int $limit = 100, int $offset = 0, bool $byStream = false): iterable
     {
-        if ($this->isFileStorageChanged()) {
-            $this->createIndex();
-        }
+        $this->_beforeMethodExec();
 
         fseek($this->fp, 0);
 
@@ -140,9 +132,7 @@ class FileTransport implements Transport
 
     public function howManyTriesWasBefore(\Throwable $exception, Config $config): int
     {
-        if ($this->isFileStorageChanged()) {
-            $this->createIndex();
-        }
+        $this->_beforeMethodExec();
 
         $correlationId = $config->getExecutor()->getCorrelationId($exception, $config);
 
@@ -153,9 +143,7 @@ class FileTransport implements Transport
 
     public function markMessageAsProcessed(Message $message): bool
     {
-        if ($this->isFileStorageChanged()) {
-            $this->createIndex();
-        }
+        $this->_beforeMethodExec();
 
         $tempFile = tempnam(sys_get_temp_dir(), self::PREFIX_FOR_TEMP_FILE . '.data');
         $tfp = fopen($tempFile, 'w');
@@ -202,6 +190,16 @@ class FileTransport implements Transport
     public function __destruct()
     {
         $this->unsubscribeToFileStorageChanges();
+    }
+
+    private function _beforeMethodExec(): void
+    {
+        if (get_resource_type($this->fp) != 'stream') {
+            $this->openFileStorage();
+            $this->createIndex();
+        } elseif ($this->isFileStorageChanged()) {
+            $this->createIndex();
+        }
     }
 
     private function openFileStorage(): void
