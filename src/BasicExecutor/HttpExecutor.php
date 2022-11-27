@@ -13,6 +13,7 @@ use Exception;
 class HttpExecutor implements Executor
 {
     private const CID = 'RETRY_PHP_CORRELATION_ID';
+    private const MID = 'RETRY_PHP_MESSAGE_ID';
     private const CONFIG_NAME = 'Retry php config name';
 
     private HttpUrl $url;
@@ -33,28 +34,40 @@ class HttpExecutor implements Executor
     public function handle(Message $message): bool
     {
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_USERAGENT, 'Retry PHP library. HttpExecutor');
+        curl_setopt_array($ch, $this->prepareCurlOptions($message));
+
+        curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        return $httpCode < 300;
+    }
+
+    protected function prepareCurlOptions(Message $message): array
+    {
+        $result = [];
+
+        $result[CURLOPT_USERAGENT] = 'Retry PHP library. HttpExecutor';
+        $result[CURLOPT_HTTPHEADER] = self::MID . ': ' . $message->getId();
+        $result[CURLOPT_HEADER] = true;
+        $result[CURLOPT_NOBODY] = true;
 
         switch ((string) $this->method) {
             case HttpMethod::GET:
-                curl_setopt($ch, CURLOPT_HTTPGET, true);
-                curl_setopt($ch, CURLOPT_URL, $this->url . '?' . http_build_query($message->getPayload()['arguments']));
+                $result[CURLOPT_HTTPGET] = true;
+                $result[CURLOPT_URL] = $this->url . '?' . http_build_query($message->getPayload()['arguments'] ?? []);
                 break;
             case HttpMethod::POST:
-                curl_setopt($ch, CURLOPT_POST, 1);
-                curl_setopt($ch,CURLOPT_POSTFIELDS, http_build_query($message->getPayload()['arguments']));
+                $result[CURLOPT_POST] = 1;
+                $result[CURLOPT_POSTFIELDS] = http_build_query($message->getPayload()['arguments'] ?? []);
                 break;
             default:
-                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $this->method);
-                curl_setopt($ch, CURLOPT_URL, $this->url . '?' . http_build_query($message->getPayload()['arguments']));
+                $result[CURLOPT_CUSTOMREQUEST] = $this->method;
+                $result[CURLOPT_URL] = $this->url . '?' . http_build_query($message->getPayload()['arguments'] ?? []);
                 break;
         }
 
-        curl_setopt_array($ch, $message->getPayload()['curlOptions']);
-        curl_exec($ch);
-        curl_close($ch);
-
-        return true;
+        return $result + ($message->getPayload()['curlOptions'] ?? []);
     }
 
     public function compilePayload(\Throwable $exception, Config $config): array

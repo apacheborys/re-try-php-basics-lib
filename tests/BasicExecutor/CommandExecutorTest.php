@@ -13,6 +13,8 @@ class CommandExecutorTest extends TestCase
 
     public function testHandle(): void
     {
+        self::tearDownAfterClass();
+
         $start = time();
         $executor = new CommandExecutor(__DIR__ . DIRECTORY_SEPARATOR . 'test.php');
 

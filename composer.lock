@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "4f4ab4e5354d87dc18295976086abaf8",
+    "content-hash": "c95513905564d1baf5d6a4fe662593fa",
     "packages": [
         {
             "name": "apacheborys/re-try-php",
@@ -3857,7 +3857,8 @@
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
-        "php": "^7.4||^8.0"
+        "php": "^7.4||^8.0",
+        "ext-json": "*"
     },
     "platform-dev": [],
     "plugin-api-version": "2.3.0"
