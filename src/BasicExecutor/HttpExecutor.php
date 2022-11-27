@@ -33,12 +33,21 @@ class HttpExecutor implements Executor
     public function handle(Message $message): bool
     {
         $ch = curl_init();
+        curl_setopt($ch, CURLOPT_USERAGENT, 'Retry PHP library. HttpExecutor');
 
-        curl_setopt($ch, CURLOPT_URL, (string) $this->url);
-
-        if ((string) $this->method === HttpMethod::POST) {
-            curl_setopt(CURLOPT_POST, 1);
-            curl_setopt(CURLOPT_POSTFIELDS, http_build_query($message->getPayload()['arguments']));
+        switch ((string) $this->method) {
+            case HttpMethod::GET:
+                curl_setopt($ch, CURLOPT_HTTPGET, true);
+                curl_setopt($ch, CURLOPT_URL, $this->url . '?' . http_build_query($message->getPayload()['arguments']));
+                break;
+            case HttpMethod::POST:
+                curl_setopt($ch, CURLOPT_POST, 1);
+                curl_setopt($ch,CURLOPT_POSTFIELDS, http_build_query($message->getPayload()['arguments']));
+                break;
+            default:
+                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $this->method);
+                curl_setopt($ch, CURLOPT_URL, $this->url . '?' . http_build_query($message->getPayload()['arguments']));
+                break;
         }
 
         curl_setopt_array($ch, $message->getPayload()['curlOptions']);
