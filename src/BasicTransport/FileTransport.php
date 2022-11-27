@@ -6,6 +6,7 @@ namespace ApacheBorys\Retry\BasicTransport;
 use ApacheBorys\Retry\Entity\Config;
 use ApacheBorys\Retry\Entity\Message;
 use ApacheBorys\Retry\Interfaces\Transport;
+use Exception;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 
@@ -228,7 +229,7 @@ class FileTransport implements Transport
     private function subscribeToFileStorageChanges(): void
     {
         if (!in_array('inotify', get_loaded_extensions(), true)) {
-            throw new \Exception('Inotify php extension not found, please install it, before using FileTransport');
+            throw new Exception('Inotify php extension not found, please install it, before using FileTransport');
         }
 
         $this->fd = inotify_init();
