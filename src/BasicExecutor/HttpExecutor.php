@@ -15,6 +15,7 @@ class HttpExecutor implements Executor
     private const CID = 'RETRY_PHP_CORRELATION_ID';
     private const MID = 'RETRY_PHP_MESSAGE_ID';
     private const CONFIG_NAME = 'Retry php config name';
+    private const USER_AGENT = 'Retry PHP library. HttpExecutor';
 
     private HttpUrl $url;
     private HttpMethod $method;
@@ -46,28 +47,36 @@ class HttpExecutor implements Executor
     protected function prepareCurlOptions(Message $message): array
     {
         $result = [];
+        $arguments = $message->getPayload()['arguments'] ?? [];
+        $options = $message->getPayload()['curlOptions'] ?? [];
 
-        $result[CURLOPT_USERAGENT] = 'Retry PHP library. HttpExecutor';
-        $result[CURLOPT_HTTPHEADER] = self::MID . ': ' . $message->getId();
+        $result[CURLOPT_USERAGENT] = self::USER_AGENT;
+        $result[CURLOPT_HTTPHEADER] = [self::MID . ': ' . $message->getId()];
         $result[CURLOPT_HEADER] = true;
         $result[CURLOPT_NOBODY] = true;
 
         switch ((string) $this->method) {
             case HttpMethod::GET:
                 $result[CURLOPT_HTTPGET] = true;
-                $result[CURLOPT_URL] = $this->url . '?' . http_build_query($message->getPayload()['arguments'] ?? []);
+                $result[CURLOPT_URL] = $this->url . '?' . http_build_query($arguments);
                 break;
             case HttpMethod::POST:
                 $result[CURLOPT_POST] = 1;
-                $result[CURLOPT_POSTFIELDS] = http_build_query($message->getPayload()['arguments'] ?? []);
+                $result[CURLOPT_POSTFIELDS] = http_build_query($arguments);
                 break;
             default:
                 $result[CURLOPT_CUSTOMREQUEST] = $this->method;
-                $result[CURLOPT_URL] = $this->url . '?' . http_build_query($message->getPayload()['arguments'] ?? []);
+                $result[CURLOPT_URL] = $this->url . '?' . http_build_query($arguments);
                 break;
         }
 
-        return $result + ($message->getPayload()['curlOptions'] ?? []);
+        $headers = isset($message->getPayload()['curlOptions'][CURLOPT_HTTPHEADER]) ?
+             $result[CURLOPT_HTTPHEADER] + ($message->getPayload()['curlOptions'] ?? []) : $result[CURLOPT_HTTPHEADER];
+
+        $result = $result + ($message->getPayload()['curlOptions'] ?? []);
+        $result[CURLOPT_HTTPHEADER] = $headers;
+
+        return $result;
     }
 
     public function compilePayload(\Throwable $exception, Config $config): array
