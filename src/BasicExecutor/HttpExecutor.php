@@ -70,10 +70,9 @@ class HttpExecutor implements Executor
                 break;
         }
 
-        $headers = isset($message->getPayload()['curlOptions'][CURLOPT_HTTPHEADER]) ?
-             $result[CURLOPT_HTTPHEADER] + ($message->getPayload()['curlOptions'] ?? []) : $result[CURLOPT_HTTPHEADER];
+        $headers = isset($options[CURLOPT_HTTPHEADER]) ? $result[CURLOPT_HTTPHEADER] + $options[CURLOPT_HTTPHEADER] : $result[CURLOPT_HTTPHEADER];
 
-        $result = $result + ($message->getPayload()['curlOptions'] ?? []);
+        $result = $result + $options;
         $result[CURLOPT_HTTPHEADER] = $headers;
 
         return $result;

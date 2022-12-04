@@ -4,17 +4,20 @@ namespace ApacheBorys\Retry\BasicTransport;
 
 use ApacheBorys\Retry\Entity\Config;
 use ApacheBorys\Retry\Entity\Message;
+use ApacheBorys\Retry\Interfaces\Transport;
 use PDO;
 
-class DbPdoTransport implements \ApacheBorys\Retry\Interfaces\Transport
+class DbPdoTransport implements Transport
 {
+    public const DEFAULT_TABLE_NAME = 'retry_exchange';
+
     private PDO $pdo;
 
     private string $tableName;
 
     private ?string $dbName;
 
-    public function __construct(PDO $pdo, string $tableName = 'retry_exchange', ?string $dbName = null)
+    public function __construct(PDO $pdo, string $tableName = self::DEFAULT_TABLE_NAME, ?string $dbName = null)
     {
         $this->pdo = $pdo;
         $this->tableName = $tableName;
