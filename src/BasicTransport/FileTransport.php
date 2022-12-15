@@ -70,7 +70,7 @@ class FileTransport implements Transport
         $returnedItems = 0;
 
         foreach ($this->fileIndexProcessed[0] as $position) {
-            fseek($this->fp, $position);
+            fseek($this->fp, $position + 1);
             $rawMessage = fgets($this->fp);
 
             $message = Message::fromArray(json_decode($rawMessage, true,512, JSON_THROW_ON_ERROR));
