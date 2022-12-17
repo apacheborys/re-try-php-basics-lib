@@ -149,13 +149,14 @@ class DbPdoTransport implements Transport
     public function howManyTriesWasBefore(\Throwable $exception, Config $config): int
     {
         $sql = sprintf(
-            'SELECT COUNT(*) FROM %s AS e WHERE %s = "%s"',
+            'SELECT MAX(%s) FROM %s AS e WHERE %s = "%s"',
+            self::COLUMN_TRY_COUNTER,
             $this->compileDbAndTableName(),
             self::COLUMN_CORRELATION_ID,
             $config->getExecutor()->getCorrelationId($exception, $config)
         );
 
-        return (int) $this->pdo->query($sql)->fetchColumn() - 1;
+        return (int) $this->pdo->query($sql)->fetchColumn();
     }
 
     public function markMessageAsProcessed(Message $message): bool

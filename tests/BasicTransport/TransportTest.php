@@ -27,73 +27,155 @@ class TransportTest extends TestCase
         }
     }
 
-    private function testFlow(TestTransportInterface $test): void
+    private function testFlow(TestTransportInterface $testForTransport): void
     {
-        $transportClassName = get_class($test->getTransport());
-        $message1 = $this->generateMessage($test->getTransport(), 'correlation-id-1');
+        $transportClassName = get_class($testForTransport->getTransport());
+        $message1 = $this->generateMessage($testForTransport->getTransport(), 'correlation-id-1');
 
-        $test->getTransport()->send($message1);
+        /**
+         * Send first message
+         */
+        $messages = $this->sendFirstMessage($testForTransport, $message1, $transportClassName);
 
-        self::assertTrue($test->isDatabaseExists(), sprintf('Database for %s is not exists', $transportClassName));
+        /**
+         * Mark first message as processed
+         */
+        $messages[0]->markAsProcessed();
+        self::assertTrue(
+            $testForTransport->getTransport()->markMessageAsProcessed($messages[0]),
+            sprintf('Can\'t mark message id %s as processed for %s transport', $message1->getId(), $transportClassName)
+        );
 
-        $messages = $test->getMessagesFromDb();
+        $this->checkTotalQuantityAndState($testForTransport, $message1, $transportClassName);
+
+        /**
+         * Send two more messages
+         */
+        $message2 = $this->generateMessage($testForTransport->getTransport(), self::TEST_CORRELATION_ID);
+        $testForTransport->getTransport()->send($message2);
+        $message3 = $this->generateMessage($testForTransport->getTransport(), self::TEST_CORRELATION_ID, 1);
+        $testForTransport->getTransport()->send($message3);
+
+        /**
+         * Check total quantity in database and ids of messages from database
+         */
+        $this->checkTotalQuantityAndIds($testForTransport, [$message2, $message3], $transportClassName);
+
+        /**
+         * How many tries was before for specified correlation id in beginning of this class @see self::TEST_CORRELATION_ID
+         */
+        self::assertSame(
+            1,
+            $testForTransport->getTransport()->howManyTriesWasBefore($this->createMock(\Throwable::class),
+            $this->createMockConfig())
+        );
+
+        /**
+         * Mark second message as processed
+         */
+        $testForTransport->getTransport()->markMessageAsProcessed($message2);
+
+        $messages = $testForTransport->getMessagesFromDb();
+        self::assertTrue(
+            $messages[1]->getIsProcessed(),
+            sprintf('Sent message id %s for %s have incorrect state', $message2->getId(), $transportClassName)
+        );
+
+        /**
+         * Try to fetch all remaining unprocessed messages
+         */
+        $this->fetchRemainingUnprocessedMessages($testForTransport, $message3, $transportClassName);
+    }
+
+    /**
+     * @return Message[]
+     */
+    private function sendFirstMessage(TestTransportInterface $testForTransport, Message $generatedMessage, string $transportClassName): array
+    {
+        $testForTransport->getTransport()->send($generatedMessage);
+
+        self::assertTrue($testForTransport->isDatabaseExists(), sprintf('Database for %s is not exists', $transportClassName));
+
+        $messages = $testForTransport->getMessagesFromDb();
 
         self::assertCount(
             1,
             $messages,
-            sprintf('Sent message id %s for %s is not in the database', $message1->getId(), $transportClassName)
+            sprintf('Sent message id %s for %s is not in the database', $generatedMessage->getId(), $transportClassName)
         );
         self::assertSame(
-            $message1->getId(),
+            $generatedMessage->getId(),
             $messages[0]->getId(),
             sprintf('Sent message for %s have incorrect id', $transportClassName)
         );
         self::assertFalse(
             $messages[0]->getIsProcessed(),
-            sprintf('Sent message id %s for %s have incorrect state', $message1->getId(), $transportClassName)
+            sprintf('Sent message id %s for %s have incorrect state', $generatedMessage->getId(), $transportClassName)
         );
 
-        $messages[0]->markAsProcessed();
-        self::assertTrue(
-            $test->getTransport()->markMessageAsProcessed($messages[0]),
-            sprintf('Can\'t mark message id %s as processed for %s transport', $message1->getId(), $transportClassName)
-        );
+        return $messages;
+    }
 
-        $messages = $test->getMessagesFromDb();
-        self::assertCount(1, $messages);
-        self::assertSame($message1->getId(), $messages[0]->getId());
-        self::assertTrue($messages[0]->getIsProcessed());
-
-        $message2 = $this->generateMessage($test->getTransport(), self::TEST_CORRELATION_ID);
-        $test->getTransport()->send($message2);
-        $message3 = $this->generateMessage($test->getTransport(), self::TEST_CORRELATION_ID, 1);
-        $test->getTransport()->send($message3);
-
-        $messages = $test->getMessagesFromDb();
-
-        self::assertCount(3, $messages);
-        self::assertSame($message2->getId(), $messages[1]->getId());
-        self::assertSame($message3->getId(), $messages[2]->getId());
-
-        self::assertSame(
+    private function checkTotalQuantityAndState(TestTransportInterface $testForTransport, Message $generatedMessage, string $transportClassName): void
+    {
+        $messages = $testForTransport->getMessagesFromDb();
+        self::assertCount(
             1,
-            $test->getTransport()->howManyTriesWasBefore($this->createMock(\Throwable::class),
-            $this->createMockConfig())
+            $messages,
+            sprintf('Wrong message quantity in %s database', $transportClassName)
         );
+        self::assertSame(
+            $generatedMessage->getId(),
+            $messages[0]->getId(),
+            sprintf('Sent message for %s have incorrect id', $transportClassName)
+        );
+        self::assertTrue(
+            $messages[0]->getIsProcessed(),
+            sprintf('Sent message id %s for %s have incorrect state', $generatedMessage->getId(), $transportClassName)
+        );
+    }
 
-        $test->getTransport()->markMessageAsProcessed($message2);
+    /**
+     * @param Message[] $generatedMessages
+     */
+    private function checkTotalQuantityAndIds(TestTransportInterface $testForTransport, array $generatedMessages, string $transportClassName): void
+    {
+        $messages = $testForTransport->getMessagesFromDb();
+        self::assertCount(
+            3,
+            $messages,
+            sprintf('Messages quantity in database for %s is wrong', $transportClassName)
+        );
+        self::assertSame(
+            $generatedMessages[0]->getId(),
+            $messages[1]->getId(),
+            sprintf('Sent message for %s have incorrect id', $transportClassName)
+        );
+        self::assertSame(
+            $generatedMessages[1]->getId(),
+            $messages[2]->getId(),
+            sprintf('Sent message for %s have incorrect id', $transportClassName)
+        );
+    }
 
-        $messages = $test->getMessagesFromDb();
-        self::assertTrue($messages[1]->getIsProcessed());
-
-        $iterator = $test->getTransport()->fetchUnprocessedMessages();
+    private function fetchRemainingUnprocessedMessages(TestTransportInterface $testForTransport, Message $generatedMessage, string $transportClassName): void
+    {
+        $iterator = $testForTransport->getTransport()->fetchUnprocessedMessages();
         $messages = [];
         foreach ($iterator as $unprocessedMessage) {
             $messages[] = $unprocessedMessage;
         }
 
-        self::assertCount(1, $messages);
-        self::assertSame($message3->getId(), $messages[0]->getId());
+        self::assertCount(
+            1,
+            $messages,
+            sprintf('Wrong quantity of remaining unprocessed messages for %s transport', $transportClassName)
+        );
+        self::assertSame(
+            $generatedMessage->getId(),
+            $messages[0]->getId(),
+            sprintf('Remaining unprocessed message has wrong id for %s transport', $transportClassName)
+        );
     }
 
     private function generateMessage(Transport $ft, string $correlationId, int $tryCounter = 0): Message
