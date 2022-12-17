@@ -93,7 +93,7 @@ class DbPdoTransport implements Transport
 
         $atLeastOneRow = false;
         while ($rawMessage = $st->fetch(PDO::FETCH_ASSOC)) {
-            $rawMessage[self::COLUMN_PAYLOAD] = json_decode($rawMessage[self::COLUMN_PAYLOAD], true);
+            $rawMessage[self::COLUMN_PAYLOAD] = json_decode((string) $rawMessage[self::COLUMN_PAYLOAD], true);
             $message = Message::fromArray($rawMessage);
 
             $atLeastOneRow = true;
@@ -131,7 +131,7 @@ class DbPdoTransport implements Transport
         $result = [];
 
         while ($rawMessage = $st->fetch(PDO::FETCH_ASSOC)) {
-            $rawMessage[self::COLUMN_PAYLOAD] = json_decode($rawMessage[self::COLUMN_PAYLOAD], true);
+            $rawMessage[self::COLUMN_PAYLOAD] = json_decode((string) $rawMessage[self::COLUMN_PAYLOAD], true);
             $message = Message::fromArray($rawMessage);
 
             if ($byStream) {
