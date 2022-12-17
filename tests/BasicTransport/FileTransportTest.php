@@ -47,6 +47,8 @@ class FileTransportTest implements TestTransportInterface
 
     public function tearDownAfterClass(): void
     {
-        unlink(self::FILE_DB);
+        if (file_exists(self::FILE_DB)) {
+            unlink(self::FILE_DB);
+        }
     }
 }

@@ -11,6 +11,26 @@ class DbPdoTransport implements Transport
 {
     public const DEFAULT_TABLE_NAME = 'retry_exchange';
 
+    public const COLUMN_ID = 'id';
+    public const COLUMN_RETRY_NAME = 'retryName';
+    public const COLUMN_CORRELATION_ID = 'correlationId';
+    public const COLUMN_PAYLOAD = 'payload';
+    public const COLUMN_TRY_COUNTER = 'tryCounter';
+    public const COLUMN_IS_PROCESSED = 'isProcessed';
+    public const COLUMN_SHOULD_BE_EXECUTED_AT = 'shouldBeExecutedAt';
+    public const COLUMN_EXECUTOR = 'executor';
+
+    private const COLUMNS = [
+        self::COLUMN_ID,
+        self::COLUMN_RETRY_NAME,
+        self::COLUMN_CORRELATION_ID,
+        self::COLUMN_PAYLOAD,
+        self::COLUMN_TRY_COUNTER,
+        self::COLUMN_IS_PROCESSED,
+        self::COLUMN_SHOULD_BE_EXECUTED_AT,
+        self::COLUMN_EXECUTOR,
+    ];
+
     private PDO $pdo;
 
     private string $tableName;
@@ -26,10 +46,12 @@ class DbPdoTransport implements Transport
 
     public function send(Message $message): bool
     {
-        $sql = 'INSERT INTO ' .
-            $this->compileDbAndTableName() .
-            ' AS e (id, retry_name, correlation_id, payload, try_counter, is_processed, should_be_executed_at, executor' .
-            ') VALUES (:id, :retry_name, :correlation_id, :payload, :try_counter, :is_processed, :should_be_executed_at, :executor)';
+        $sql = sprintf(
+            'INSERT INTO %s AS e (%s) VALUES (:%s)',
+            $this->compileDbAndTableName(),
+            implode(', ', self::COLUMNS),
+            implode(', :', self::COLUMNS)
+        );
 
         $id = $message->getId();
         $retryName = $message->getRetryName();
@@ -41,32 +63,39 @@ class DbPdoTransport implements Transport
         $executor = $message->getExecutor();
 
         $st = $this->pdo->prepare($sql);
-        $st->bindParam(':id', $id);
-        $st->bindParam(':retry_name', $retryName);
-        $st->bindParam('correlation_id', $correlationId);
-        $st->bindParam('payload', $payload);
-        $st->bindParam('try_counter', $tryCounter, PDO::PARAM_INT);
-        $st->bindParam('is_processed', $isProcessed, PDO::PARAM_BOOL);
-        $st->bindParam('should_be_executed_at', $shouldBeExecutedAt);
-        $st->bindParam('executor', $executor);
+        $st->bindParam(self::COLUMN_ID, $id);
+        $st->bindParam(self::COLUMN_RETRY_NAME, $retryName);
+        $st->bindParam(self::COLUMN_CORRELATION_ID, $correlationId);
+        $st->bindParam(self::COLUMN_PAYLOAD, $payload);
+        $st->bindParam(self::COLUMN_TRY_COUNTER, $tryCounter, PDO::PARAM_INT);
+        $st->bindParam(self::COLUMN_IS_PROCESSED, $isProcessed, PDO::PARAM_BOOL);
+        $st->bindParam(self::COLUMN_SHOULD_BE_EXECUTED_AT, $shouldBeExecutedAt);
+        $st->bindParam(self::COLUMN_EXECUTOR, $executor);
 
         return $st->execute();
     }
 
     public function fetchUnprocessedMessages(int $batchSize = -1): ?iterable
     {
-        $sql = 'SELECT id, retry_name, correlation_id, payload, try_counter, is_processed, should_be_executed_at, executor FROM ' .
-            $this->compileDbAndTableName() . ' AS e WHERE is_processed = 0';
+        $sql = sprintf(
+            'SELECT %s FROM %s AS e WHERE %s = 0',
+            implode(', ', self::COLUMNS),
+            $this->compileDbAndTableName(),
+            self::COLUMN_IS_PROCESSED
+        );
 
         if ($batchSize > -1) {
             $sql .= ' LIMIT ' . $batchSize;
         }
 
         $st = $this->pdo->prepare($sql);
-        $st->setFetchMode(PDO::FETCH_CLASS, Message::class);
+        $st->execute();
 
         $atLeastOneRow = false;
-        while ($message = $st->fetch()) {
+        while ($rawMessage = $st->fetch(PDO::FETCH_ASSOC)) {
+            $rawMessage[self::COLUMN_PAYLOAD] = json_decode($rawMessage[self::COLUMN_PAYLOAD], true);
+            $message = Message::fromArray($rawMessage);
+
             $atLeastOneRow = true;
             yield $message;
         }
@@ -89,38 +118,60 @@ class DbPdoTransport implements Transport
 
     public function getMessages(int $limit = 100, int $offset = 0, bool $byStream = false): iterable
     {
-        $sql = 'SELECT id, retry_name, correlation_id, payload, try_counter, is_processed, should_be_executed_at, executor FROM ' .
-            $this->compileDbAndTableName() . ' AS e LIMIT ' . $limit . ' OFFSET ' . $offset;
+        $sql = sprintf(
+            'SELECT %s FROM %s AS e LIMIT %d OFFSET %d',
+            implode(', ', self::COLUMNS),
+            $this->compileDbAndTableName(),
+            $limit,
+            $offset
+        );
 
         $st = $this->pdo->prepare($sql);
-        $st->setFetchMode(PDO::FETCH_CLASS, Message::class);
+        $st->execute();
+        $result = [];
+
+        while ($rawMessage = $st->fetch(PDO::FETCH_ASSOC)) {
+            $rawMessage[self::COLUMN_PAYLOAD] = json_decode($rawMessage[self::COLUMN_PAYLOAD], true);
+            $message = Message::fromArray($rawMessage);
+
+            if ($byStream) {
+                yield $message;
+            } else {
+                $result[] = $message;
+            }
+        }
 
         if ($byStream) {
-            while ($message = $st->fetch()) {
-                yield $message;
-            }
-        } else {
-            return $st->fetchAll();
+            return $result;
         }
     }
 
     public function howManyTriesWasBefore(\Throwable $exception, Config $config): int
     {
-        $sql = 'SELECT COUNT(*) FROM ' .
-            $this->compileDbAndTableName() . ' AS e WHERE correlation_id = ' .
-            $config->getExecutor()->getCorrelationId($exception, $config);
+        $sql = sprintf(
+            'SELECT COUNT(*) FROM %s AS e WHERE %s = "%s"',
+            $this->compileDbAndTableName(),
+            self::COLUMN_CORRELATION_ID,
+            $config->getExecutor()->getCorrelationId($exception, $config)
+        );
 
-        return $this->pdo->query($sql)->fetchColumn();
+        return (int) $this->pdo->query($sql)->fetchColumn() - 1;
     }
 
     public function markMessageAsProcessed(Message $message): bool
     {
-        $sql = 'UPDATE ' . $this->compileDbAndTableName() . ' SET is_processed = 1 WHERE id = :id';
+        $sql = sprintf(
+            'UPDATE %s SET %s = 1 WHERE %s = :%s',
+            $this->compileDbAndTableName(),
+            self::COLUMN_IS_PROCESSED,
+            self::COLUMN_ID,
+            self::COLUMN_ID
+        );
 
         $id = $message->getId();
 
         $st = $this->pdo->prepare($sql);
-        $st->bindParam('id', $id);
+        $st->bindParam(self::COLUMN_ID, $id);
 
         return $st->execute();
     }

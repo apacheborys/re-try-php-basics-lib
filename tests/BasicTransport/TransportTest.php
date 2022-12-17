@@ -29,20 +29,35 @@ class TransportTest extends TestCase
 
     private function testFlow(TestTransportInterface $test): void
     {
+        $transportClassName = get_class($test->getTransport());
         $message1 = $this->generateMessage($test->getTransport(), 'correlation-id-1');
 
         $test->getTransport()->send($message1);
 
-        self::assertTrue($test->isDatabaseExists());
+        self::assertTrue($test->isDatabaseExists(), sprintf('Database for %s is not exists', $transportClassName));
 
         $messages = $test->getMessagesFromDb();
 
-        self::assertCount(1, $messages);
-        self::assertSame($message1->getId(), $messages[0]->getId());
-        self::assertFalse($messages[0]->getIsProcessed());
+        self::assertCount(
+            1,
+            $messages,
+            sprintf('Sent message id %s for %s is not in the database', $message1->getId(), $transportClassName)
+        );
+        self::assertSame(
+            $message1->getId(),
+            $messages[0]->getId(),
+            sprintf('Sent message for %s have incorrect id', $transportClassName)
+        );
+        self::assertFalse(
+            $messages[0]->getIsProcessed(),
+            sprintf('Sent message id %s for %s have incorrect state', $message1->getId(), $transportClassName)
+        );
 
         $messages[0]->markAsProcessed();
-        self::assertTrue($test->getTransport()->markMessageAsProcessed($messages[0]));
+        self::assertTrue(
+            $test->getTransport()->markMessageAsProcessed($messages[0]),
+            sprintf('Can\'t mark message id %s as processed for %s transport', $message1->getId(), $transportClassName)
+        );
 
         $messages = $test->getMessagesFromDb();
         self::assertCount(1, $messages);

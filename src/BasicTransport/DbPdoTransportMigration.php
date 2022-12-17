@@ -22,16 +22,18 @@ class DbPdoTransportMigration
 
     public function run(): bool
     {
-        $sql = "CREATE TABLE " . $this->compileDbAndTableName() . " (
-            id CHAR(36),
-            retry_name VARCHAR(255),
-            correlation_id VARCHAR(255),
-            payload TEXT,
-            try_counter SMALLINT,
-            is_processed TINYINT,
-            should_be_executed_at DATETIME,
-            executor VARCHAR(1023)
-        );";
+        $sql = sprintf(
+            "CREATE TABLE %s (%s CHAR(36), %s VARCHAR(255), %s VARCHAR(255), %s TEXT, %s SMALLINT, %s TINYINT, %s DATETIME, %s VARCHAR(1023))",
+            $this->compileDbAndTableName(),
+            DbPdoTransport::COLUMN_ID,
+            DbPdoTransport::COLUMN_RETRY_NAME,
+            DbPdoTransport::COLUMN_CORRELATION_ID,
+            DbPdoTransport::COLUMN_PAYLOAD,
+            DbPdoTransport::COLUMN_TRY_COUNTER,
+            DbPdoTransport::COLUMN_IS_PROCESSED,
+            DbPdoTransport::COLUMN_SHOULD_BE_EXECUTED_AT,
+            DbPdoTransport::COLUMN_EXECUTOR
+        );
         $st = $this->pdo->prepare($sql);
 
         return $st->execute();
