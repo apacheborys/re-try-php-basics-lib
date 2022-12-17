@@ -89,7 +89,6 @@ class MemcachedTransport implements Transport
         );
     }
 
-    /** @inheritDoc */
     public function getMessages(int $limit = 100, int $offset = 0, bool $byStream = false): iterable
     {
         $allProcessedKeys = $this->memcachedForProcessed ? $this->memcachedForProcessed->getAllKeys() : [];
@@ -119,9 +118,9 @@ class MemcachedTransport implements Transport
             return $result;
         } else {
             if ($qtyAllProcessedKeys < $offset) {
-                yield $this->getValuesByKeys($allProcessedKeys, $this->memcachedForProcessed, $limit, $offset);
+                return $this->getValuesByKeys($allProcessedKeys, $this->memcachedForProcessed, $limit, $offset);
             }
-            yield $this->getValuesByKeys($allKeys, $this->memcached, $limit, $offset, $qtyAllProcessedKeys);
+            return $this->getValuesByKeys($allKeys, $this->memcached, $limit, $offset, $qtyAllProcessedKeys);
         }
     }
 
@@ -156,7 +155,7 @@ class MemcachedTransport implements Transport
     /**
      * Return values by provided keys from provided Memcached instance. If limit will be equal to -1, then it will be until end of keys
      *
-     * @return Message[]
+     * @return \Generator<array-key, Message>
      */
     private function getValuesByKeys(array $keys, ?Memcached $mc = null, int $limit = 100, int $offset = 0, int $pointer = 0): iterable
     {

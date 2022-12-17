@@ -101,7 +101,7 @@ class DbPdoTransport implements Transport
         }
 
         if (!$atLeastOneRow) {
-            return false;
+            return null;
         }
     }
 
