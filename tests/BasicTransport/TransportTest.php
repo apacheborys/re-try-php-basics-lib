@@ -7,22 +7,35 @@ use ApacheBorys\Retry\Entity\Message;
 use ApacheBorys\Retry\Interfaces\Transport;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * This integration test will take care about any Transport. Please implement @see TestTransportInterface and functionality below will
+ * automatically check basic functionality of your Transport.
+ * If this class located in vendor directory, please don't forget to extend this class to your local test and define your test class in
+ * @see self::$transportsForTests array. In this case your new class will be tested exclusively without running any other
+ * @see TestTransportInterface implementations
+ */
 class TransportTest extends TestCase
 {
     private const TEST_CORRELATION_ID = 'correlation-id-2';
+
+    /**
+     * Put here any transport test (what implements @see TestTransportInterface) what should be tested.
+     * Otherwise, all classes what implement this interface will be tested
+     */
+    protected static array $transportsForTests = [];
 
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
 
-        foreach (self::getAllTransportsForTest() as $transport) {
+        foreach (self::getTestsForTransports() as $transport) {
             $transport->setUpBeforeClass();
         }
     }
 
     public function testAllTransports(): void
     {
-        foreach (self::getAllTransportsForTest() as $transport) {
+        foreach (self::getTestsForTransports() as $transport) {
             $this->testFlow($transport);
         }
     }
@@ -212,13 +225,17 @@ class TransportTest extends TestCase
     /**
      * @return TestTransportInterface[]
      */
-    private static function getAllTransportsForTest(): array
+    private static function getTestsForTransports(): array
     {
         $result = [];
 
-        foreach (get_declared_classes() as $className) {
-            if (in_array(TestTransportInterface::class, class_implements($className))) {
-                $result[] = $className;
+        if (count(self::$transportsForTests) > 0) {
+            $result = self::$transportsForTests;
+        } else {
+            foreach (get_declared_classes() as $className) {
+                if (in_array(TestTransportInterface::class, class_implements($className))) {
+                    $result[] = $className;
+                }
             }
         }
 
@@ -234,7 +251,7 @@ class TransportTest extends TestCase
     {
         parent::tearDownAfterClass();
 
-        foreach (self::getAllTransportsForTest() as $transport) {
+        foreach (self::getTestsForTransports() as $transport) {
             $transport->tearDownAfterClass();
         }
     }
