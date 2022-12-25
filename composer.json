@@ -24,6 +24,7 @@
     },
     "scripts": {
         "test": [
+            "./vendor/bin/psalm",
             "php vendor/bin/phpunit tests"
         ]
     },

@@ -6,6 +6,7 @@ use ApacheBorys\Retry\Entity\Config;
 use ApacheBorys\Retry\Entity\Message;
 use ApacheBorys\Retry\Interfaces\Transport;
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 
 /**
  * This integration test will take care about any Transport. Please implement @see TestTransportInterface and functionality below will
@@ -42,7 +43,7 @@ class TransportTest extends TestCase
 
     private function testFlow(TestTransportInterface $testForTransport): void
     {
-        $transportClassName = get_class($testForTransport->getTransport());
+        $transportClassName = (new ReflectionClass($testForTransport->getTransport()))->getShortName();
         $message1 = $this->generateMessage($testForTransport->getTransport(), 'correlation-id-1');
 
         /**

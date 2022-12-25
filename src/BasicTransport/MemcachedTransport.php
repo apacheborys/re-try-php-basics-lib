@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace ApacheBorys\Retry\BasicTransport;
 
+use ApacheBorys\Retry\BasicTransport\Tests\MemcachedTransport\MemcachedMock;
 use ApacheBorys\Retry\Entity\Config;
 use ApacheBorys\Retry\Entity\Message;
 use ApacheBorys\Retry\Interfaces\Transport;
@@ -12,15 +13,17 @@ class MemcachedTransport implements Transport
 {
     public const PREFIX = 'RETRY-PHP-LIB-';
 
-    private Memcached $memcached;
+    /** @var MemcachedMock|Memcached */
+    protected $memcached;
 
-    private string $prefix;
+    protected string $prefix;
 
-    private int $ttlForProcessedMessage;
+    protected int $ttlForProcessedMessage;
 
     private array $unprocessedMessages = [];
 
-    private ?Memcached $memcachedForProcessed;
+    /** @var MemcachedMock|Memcached|null */
+    protected $memcachedForProcessed;
 
     public function __construct(
         Memcached $memcached,
@@ -50,7 +53,8 @@ class MemcachedTransport implements Transport
         $counter = 0;
 
         foreach ($this->unprocessedMessages as $unprocessedMessageId) {
-            yield $this->memcached->get($unprocessedMessageId);
+            $tempRawMessage = $this->memcached->get($this->prefix . $unprocessedMessageId);
+            yield Message::fromArray(json_decode($tempRawMessage, true));
 
             if ($batchSize > -1 && $batchSize >= $counter) {
                 $counter++;
@@ -143,10 +147,10 @@ class MemcachedTransport implements Transport
         $message->markAsProcessed();
 
         if (is_null($this->memcachedForProcessed)) {
-            return $this->memcached->set($message->getId(), (string) $message, $this->ttlForProcessedMessage);
+            return $this->memcached->set($this->prefix . $message->getId(), (string) $message, $this->ttlForProcessedMessage);
         } else {
-            $resultFromDeletion = $this->memcached->delete($message->getId());
-            $resultFromSet = $this->memcachedForProcessed->set($message->getId(), (string) $message, $this->ttlForProcessedMessage);
+            $resultFromDeletion = $this->memcached->delete($this->prefix . $message->getId());
+            $resultFromSet = $this->memcachedForProcessed->set($this->prefix . $message->getId(), (string) $message, $this->ttlForProcessedMessage);
 
             return $resultFromDeletion && $resultFromSet;
         }
@@ -155,9 +159,10 @@ class MemcachedTransport implements Transport
     /**
      * Return values by provided keys from provided Memcached instance. If limit will be equal to -1, then it will be until end of keys
      *
+     * @param MemcachedMock|Memcached|null $mc
      * @return \Generator<array-key, Message>
      */
-    private function getValuesByKeys(array $keys, ?Memcached $mc = null, int $limit = 100, int $offset = 0, int $pointer = 0): iterable
+    private function getValuesByKeys(array $keys, $mc = null, int $limit = 100, int $offset = 0, int $pointer = 0): iterable
     {
         if (is_null($mc)) {
             return;
