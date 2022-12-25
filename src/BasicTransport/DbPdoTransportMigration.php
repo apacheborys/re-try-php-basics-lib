@@ -23,7 +23,17 @@ class DbPdoTransportMigration
     public function run(): bool
     {
         $sql = sprintf(
-            "CREATE TABLE %s (%s CHAR(36), %s VARCHAR(255), %s VARCHAR(255), %s TEXT, %s SMALLINT, %s TINYINT, %s DATETIME, %s VARCHAR(1023))",
+            "CREATE TABLE %s (
+    %s CHAR(36),
+    %s VARCHAR(255),
+    %s VARCHAR(255),
+    %s TEXT,
+    %s SMALLINT,
+    %s TINYINT,
+    %s DATETIME,
+    %s VARCHAR(1023),
+    PRIMARY KEY (%s)
+)",
             $this->compileDbAndTableName(),
             DbPdoTransport::COLUMN_ID,
             DbPdoTransport::COLUMN_RETRY_NAME,
@@ -32,11 +42,23 @@ class DbPdoTransportMigration
             DbPdoTransport::COLUMN_TRY_COUNTER,
             DbPdoTransport::COLUMN_IS_PROCESSED,
             DbPdoTransport::COLUMN_SHOULD_BE_EXECUTED_AT,
-            DbPdoTransport::COLUMN_EXECUTOR
+            DbPdoTransport::COLUMN_EXECUTOR,
+            DbPdoTransport::COLUMN_ID
         );
         $st = $this->pdo->prepare($sql);
+        $createTable = $st->execute();
 
-        return $st->execute();
+        $sql = sprintf(
+            "CREATE INDEX idx_is_process_%s ON %s (%s)",
+            $this->tableName,
+            $this->compileDbAndTableName(),
+            DbPdoTransport::COLUMN_IS_PROCESSED
+        );
+
+        $st = $this->pdo->prepare($sql);
+        $createIndex = $st->execute();
+
+        return $createTable && $createIndex;
     }
 
     public function rollback(): bool
