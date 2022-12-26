@@ -59,9 +59,19 @@ class DbPdoTransportMigration
         );
 
         $st = $this->pdo->prepare($sql);
-        $createIndex = $st->execute();
+        $createIndexIsProcessed = $st->execute();
 
-        return $createTable && $createIndex;
+        $sql = sprintf(
+            "CREATE INDEX idx_correlation_id_%s ON %s (%s)",
+            $this->tableName,
+            $this->compileDbAndTableName(),
+            DbPdoTransport::COLUMN_CORRELATION_ID
+        );
+
+        $st = $this->pdo->prepare($sql);
+        $createIndexCorrelationId = $st->execute();
+
+        return $createTable && $createIndexIsProcessed && $createIndexCorrelationId;
     }
 
     public function rollback(): bool
