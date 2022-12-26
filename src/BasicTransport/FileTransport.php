@@ -12,6 +12,8 @@ use Psr\Log\LogLevel;
 
 class FileTransport implements Transport
 {
+    use UuidGenerator;
+
     private const MINIMUM_INDEX_TTL = 60;
 
     private const PREFIX_FOR_TEMP_FILE = 'RE_TRY_FILE_TRANSPORT';
@@ -90,13 +92,7 @@ class FileTransport implements Transport
     {
         $this->_beforeMethodExec();
 
-        return sprintf( '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
-            mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff ),
-            mt_rand( 0, 0xffff ),
-            mt_rand( 0, 0x0fff ) | 0x4000,
-            mt_rand( 0, 0x3fff ) | 0x8000,
-            mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff )
-        );
+        return $this->generateUuidV4();
     }
 
     public function getMessages(int $limit = 100, int $offset = 0, bool $byStream = false): iterable

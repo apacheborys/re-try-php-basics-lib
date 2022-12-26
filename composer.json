@@ -12,10 +12,11 @@
     "require": {
         "php": "^7.4||^8.0",
         "apacheborys/re-try-php": "*",
-        "psr/log": "^1.1",
-        "ext-json": "*"
+        "psr/log": "^1.1"
     },
     "require-dev": {
+        "ext-mongodb": "*",
+        "ext-json": "*",
         "ext-pdo": "*",
         "ext-inotify": "*",
         "ext-memcached": "*",

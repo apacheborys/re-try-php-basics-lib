@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c858ed275cd5608fbc717184b4477971",
+    "content-hash": "c95513905564d1baf5d6a4fe662593fa",
     "packages": [
         {
             "name": "apacheborys/re-try-php",
-            "version": "0.1",
+            "version": "0.11",
             "source": {
                 "type": "git",
                 "url": "https://github.com/apacheborys/re-try-php.git",
-                "reference": "18c9342dc0827a41f040118cd0ab3fc1c8784d80"
+                "reference": "efb4367e2aa2cccc7925d8faefe4ae3fa1f5b316"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/apacheborys/re-try-php/zipball/18c9342dc0827a41f040118cd0ab3fc1c8784d80",
-                "reference": "18c9342dc0827a41f040118cd0ab3fc1c8784d80",
+                "url": "https://api.github.com/repos/apacheborys/re-try-php/zipball/efb4367e2aa2cccc7925d8faefe4ae3fa1f5b316",
+                "reference": "efb4367e2aa2cccc7925d8faefe4ae3fa1f5b316",
                 "shasum": ""
             },
             "require": {
@@ -25,7 +25,8 @@
             },
             "require-dev": {
                 "ext-json": "*",
-                "phpunit/phpunit": "9.5.21"
+                "phpunit/phpunit": "9.5.21",
+                "vimeo/psalm": "^4.30"
             },
             "type": "library",
             "autoload": {
@@ -46,9 +47,9 @@
             "description": "Library to operate retries in your php application",
             "support": {
                 "issues": "https://github.com/apacheborys/re-try-php/issues",
-                "source": "https://github.com/apacheborys/re-try-php/tree/0.1"
+                "source": "https://github.com/apacheborys/re-try-php/tree/0.11"
             },
-            "time": "2022-09-11T05:33:03+00:00"
+            "time": "2022-12-26T11:56:59+00:00"
         },
         {
             "name": "psr/log",
@@ -1331,16 +1332,16 @@
         },
         {
             "name": "phpunit/php-code-coverage",
-            "version": "9.2.21",
+            "version": "9.2.22",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/php-code-coverage.git",
-                "reference": "3f893e19712bb0c8bc86665d1562e9fd509c4ef0"
+                "reference": "e4bf60d2220b4baaa0572986b5d69870226b06df"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/php-code-coverage/zipball/3f893e19712bb0c8bc86665d1562e9fd509c4ef0",
-                "reference": "3f893e19712bb0c8bc86665d1562e9fd509c4ef0",
+                "url": "https://api.github.com/repos/sebastianbergmann/php-code-coverage/zipball/e4bf60d2220b4baaa0572986b5d69870226b06df",
+                "reference": "e4bf60d2220b4baaa0572986b5d69870226b06df",
                 "shasum": ""
             },
             "require": {
@@ -1396,7 +1397,7 @@
             ],
             "support": {
                 "issues": "https://github.com/sebastianbergmann/php-code-coverage/issues",
-                "source": "https://github.com/sebastianbergmann/php-code-coverage/tree/9.2.21"
+                "source": "https://github.com/sebastianbergmann/php-code-coverage/tree/9.2.22"
             },
             "funding": [
                 {
@@ -1404,7 +1405,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2022-12-14T13:26:54+00:00"
+            "time": "2022-12-18T16:40:55+00:00"
         },
         {
             "name": "phpunit/php-file-iterator",
@@ -3865,9 +3866,6 @@
         "php": "^7.4||^8.0",
         "ext-json": "*"
     },
-    "platform-dev": {
-        "ext-pdo": "*",
-        "ext-inotify": "*"
-    },
+    "platform-dev": [],
     "plugin-api-version": "2.3.0"
 }

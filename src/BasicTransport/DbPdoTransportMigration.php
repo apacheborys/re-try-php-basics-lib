@@ -32,7 +32,8 @@ class DbPdoTransportMigration
     %s TINYINT,
     %s DATETIME,
     %s VARCHAR(1023),
-    PRIMARY KEY (%s)
+    %s DATETIME DEFAULT NOW,
+    PRIMARY KEY (%s, %s)
 )",
             $this->compileDbAndTableName(),
             DbPdoTransport::COLUMN_ID,
@@ -43,6 +44,8 @@ class DbPdoTransportMigration
             DbPdoTransport::COLUMN_IS_PROCESSED,
             DbPdoTransport::COLUMN_SHOULD_BE_EXECUTED_AT,
             DbPdoTransport::COLUMN_EXECUTOR,
+            DbPdoTransport::COLUMN_CREATED_AT,
+            DbPdoTransport::COLUMN_CREATED_AT,
             DbPdoTransport::COLUMN_ID
         );
         $st = $this->pdo->prepare($sql);

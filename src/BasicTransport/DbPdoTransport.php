@@ -9,16 +9,19 @@ use PDO;
 
 class DbPdoTransport implements Transport
 {
+    use UuidGenerator;
+
     public const DEFAULT_TABLE_NAME = 'retry_exchange';
 
-    public const COLUMN_ID = 'id';
-    public const COLUMN_RETRY_NAME = 'retryName';
-    public const COLUMN_CORRELATION_ID = 'correlationId';
-    public const COLUMN_PAYLOAD = 'payload';
-    public const COLUMN_TRY_COUNTER = 'tryCounter';
-    public const COLUMN_IS_PROCESSED = 'isProcessed';
-    public const COLUMN_SHOULD_BE_EXECUTED_AT = 'shouldBeExecutedAt';
-    public const COLUMN_EXECUTOR = 'executor';
+    public const COLUMN_ID = Message::ELEM_ID;
+    public const COLUMN_RETRY_NAME = Message::ELEM_RETRY_NAME;
+    public const COLUMN_CORRELATION_ID = Message::ELEM_CORRELATION_ID;
+    public const COLUMN_PAYLOAD = Message::ELEM_PAYLOAD;
+    public const COLUMN_TRY_COUNTER = Message::ELEM_TRY_COUNTER;
+    public const COLUMN_IS_PROCESSED = Message::ELEM_IS_PROCESSED;
+    public const COLUMN_SHOULD_BE_EXECUTED_AT = Message::ELEM_SHOULD_BE_EXECUTED_AT;
+    public const COLUMN_EXECUTOR = Message::ELEM_EXECUTOR;
+    public const COLUMN_CREATED_AT = 'created_at';
 
     private const COLUMNS = [
         self::COLUMN_ID,
@@ -107,13 +110,7 @@ class DbPdoTransport implements Transport
 
     public function getNextId(\Throwable $exception, Config $config): string
     {
-        return sprintf( '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
-            mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff ),
-            mt_rand( 0, 0xffff ),
-            mt_rand( 0, 0x0fff ) | 0x4000,
-            mt_rand( 0, 0x3fff ) | 0x8000,
-            mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff )
-        );
+        return $this->generateUuidV4();
     }
 
     public function getMessages(int $limit = 100, int $offset = 0, bool $byStream = false): iterable
