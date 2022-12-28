@@ -1,11 +1,12 @@
 <?php
 declare(strict_types=1);
 
-namespace ApacheBorys\Retry\BasicTransport;
+namespace ApacheBorys\Retry\BasicTransport\Migration;
 
+use ApacheBorys\Retry\BasicTransport\DbPdoTransport;
 use PDO;
 
-class DbPdoTransportMigration
+class DbPdoTransportMigration implements Migration
 {
     private PDO $pdo;
 

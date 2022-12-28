@@ -3,7 +3,7 @@
 namespace ApacheBorys\Retry\BasicTransport\Tests;
 
 use ApacheBorys\Retry\BasicTransport\DbPdoTransport;
-use ApacheBorys\Retry\BasicTransport\DbPdoTransportMigration;
+use ApacheBorys\Retry\BasicTransport\Migration\DbPdoTransportMigration;
 use ApacheBorys\Retry\Entity\Message;
 use ApacheBorys\Retry\Interfaces\Transport;
 
