@@ -1,7 +1,9 @@
 <?php
+declare(strict_types=1);
 
 namespace ApacheBorys\Retry\BasicTransport;
 
+use ApacheBorys\Retry\BasicTransport\Tests\MongoDbTransport\MongoManagerMock;
 use ApacheBorys\Retry\Entity\Config;
 use ApacheBorys\Retry\Entity\Message;
 use ApacheBorys\Retry\Interfaces\Transport;
@@ -13,9 +15,10 @@ class MongoDbTransport implements Transport
 {
     use UuidGenerator;
 
-    private Manager $mongoManager;
+    /** @var Manager|MongoManagerMock */
+    protected $mongoManager;
 
-    private string $namespace;
+    protected string $namespace;
 
     public function __construct(Manager $mongoManager, string $namespace)
     {
