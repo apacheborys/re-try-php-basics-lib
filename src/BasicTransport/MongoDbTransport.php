@@ -3,7 +3,9 @@ declare(strict_types=1);
 
 namespace ApacheBorys\Retry\BasicTransport;
 
+use ApacheBorys\Retry\BasicTransport\Tests\MongoDbTransport\BulkWriteMock;
 use ApacheBorys\Retry\BasicTransport\Tests\MongoDbTransport\MongoManagerMock;
+use ApacheBorys\Retry\BasicTransport\Tests\MongoDbTransport\QueryMock;
 use ApacheBorys\Retry\Entity\Config;
 use ApacheBorys\Retry\Entity\Message;
 use ApacheBorys\Retry\Interfaces\Transport;
@@ -28,7 +30,7 @@ class MongoDbTransport implements Transport
 
     public function send(Message $message): bool
     {
-        $bulk = new BulkWrite();
+        $bulk = $this->getNewBulkWrite();
 
         $doc = json_decode((string) $message, true);
         $doc['_id'] = $doc[Message::ELEM_ID];
@@ -43,7 +45,7 @@ class MongoDbTransport implements Transport
 
     public function fetchUnprocessedMessages(int $batchSize = -1): ?iterable
     {
-        $query = new Query([Message::ELEM_IS_PROCESSED => false]);
+        $query = $this->getNewQuery([Message::ELEM_IS_PROCESSED => false]);
         $cursor = $this->mongoManager->executeQuery($this->namespace, $query);
 
         foreach ($cursor as $rawMessage) {
@@ -58,7 +60,7 @@ class MongoDbTransport implements Transport
 
     public function getMessages(int $limit = 100, int $offset = 0, bool $byStream = false): iterable
     {
-        $query = new Query([], ['limit' => $limit, 'skip' => $offset]);
+        $query = $this->getNewQuery([], ['limit' => $limit, 'skip' => $offset]);
         $cursor = $this->mongoManager->executeQuery($this->namespace, $query);
 
         $result = [];
@@ -79,7 +81,7 @@ class MongoDbTransport implements Transport
 
     public function howManyTriesWasBefore(\Throwable $exception, Config $config): int
     {
-        $query = new Query([Message::ELEM_CORRELATION_ID => $config->getExecutor()->getCorrelationId($exception, $config)]);
+        $query = $this->getNewQuery([Message::ELEM_CORRELATION_ID => $config->getExecutor()->getCorrelationId($exception, $config)]);
         $cursor = $this->mongoManager->executeQuery($this->namespace, $query);
 
         $result = 0;
@@ -94,7 +96,7 @@ class MongoDbTransport implements Transport
     {
         $message->markAsProcessed();
 
-        $bulk = new BulkWrite();
+        $bulk = $this->getNewBulkWrite();
         $bulk->update(
             ['_id' => $message->getId()],
             ['$set' => [Message::ELEM_IS_PROCESSED => true]],
@@ -104,5 +106,21 @@ class MongoDbTransport implements Transport
         $result = $this->mongoManager->executeBulkWrite($this->namespace, $bulk);
 
         return $result->getModifiedCount() === 1;
+    }
+
+    /**
+     * @return BulkWrite|BulkWriteMock
+     */
+    protected function getNewBulkWrite(): object
+    {
+        return new BulkWrite();
+    }
+
+    /**
+     * @return Query|QueryMock
+     */
+    protected function getNewQuery(array $arguments, array $options = []): object
+    {
+        return new Query($arguments, $options);
     }
 }
