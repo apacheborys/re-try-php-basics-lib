@@ -49,6 +49,9 @@ class MongoDbTransport implements Transport
         $cursor = $this->mongoManager->executeQuery($this->namespace, $query);
 
         foreach ($cursor as $rawMessage) {
+            $rawMessage['id'] = $rawMessage['_id'];
+            unset($rawMessage['_id']);
+
             yield Message::fromArray($rawMessage);
         }
     }

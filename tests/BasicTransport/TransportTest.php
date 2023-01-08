@@ -24,7 +24,7 @@ class TransportTest extends TestCase
      * Put here any transport test (what implements @see TestTransportInterface) what should be tested.
      * Otherwise, all classes what implement this interface will be tested
      */
-    protected static array $transportsForTests = [MongoDbTransportTest::class];
+    protected static array $transportsForTests = [];
 
     public static function setUpBeforeClass(): void
     {

@@ -4,9 +4,6 @@ declare(strict_types=1);
 namespace ApacheBorys\Retry\BasicTransport\Tests\MongoDbTransport;
 
 use MongoDB\Driver\BulkWrite;
-use MongoDB\Driver\WriteResult;
-use PHPUnit\Framework\MockObject\Generator;
-use PHPUnit\Framework\TestCase;
 
 class MongoManagerMock
 {
@@ -15,7 +12,7 @@ class MongoManagerMock
     /**
      * @param BulkWriteMock|BulkWrite $bulkWrite
      */
-    public function executeBulkWrite(string $namespace, object $bulkWrite): WriteResult
+    public function executeBulkWrite(string $namespace, object $bulkWrite): WriteResultMock
     {
         $action = key($bulkWrite->getActionSnapshot());
 
@@ -40,6 +37,11 @@ class MongoManagerMock
                 yield $item;
             }
         }
+    }
+
+    public function getStorage(): array
+    {
+        return $this->storage;
     }
 
     private function filterByArgs(array $args, array $item): bool
@@ -69,47 +71,33 @@ class MongoManagerMock
     /**
      * @param BulkWriteMock|BulkWrite $bulkWrite
      */
-    private function prepareMockForInsert(string $namespace, object $bulkWrite): WriteResult
+    private function prepareMockForInsert(string $namespace, object $bulkWrite): WriteResultMock
     {
-        $this->storage[$namespace] = array_merge($this->storage[$namespace], $bulkWrite->getActionSnapshot()['insert']);
+        $this->storage[$namespace] = array_merge($this->storage[$namespace] ?? [], [$bulkWrite->getActionSnapshot()['insert']]);
 
-        /** @var WriteResult $writeResult */
-        $writeResult = (new Generator())->getMock(WriteResult::class)
-            ->expects(TestCase::once())
-            ->method('getInsertedCount')
-            ->willReturn(count($bulkWrite->getActionSnapshot()))
-        ;
-
-        return $writeResult;
+        return new WriteResultMock(count($bulkWrite->getActionSnapshot()));
     }
 
     /**
      * @param BulkWriteMock|BulkWrite $bulkWrite
      */
-    private function prepareMockForUpdate(string $namespace, object $bulkWrite): WriteResult
+    private function prepareMockForUpdate(string $namespace, object $bulkWrite): WriteResultMock
     {
         $id = $bulkWrite->getActionSnapshot()['update']['id']['_id'];
         $set = $bulkWrite->getActionSnapshot()['update']['set']['$set'];
 
         $hit = false;
-        foreach ($this->storage[$namespace] as $item) {
+        foreach ($this->storage[$namespace] as &$item) {
             if ($item['_id'] !== $id) {
                 continue;
             }
 
             $hit = true;
-            foreach ($set as $setValue) {
-                $item[key($setValue)] = current($setValue);
+            foreach ($set as $key => $setValue) {
+                $item[$key] = $setValue;
             }
         }
 
-        /** @var WriteResult $writeResult */
-        $writeResult = (new Generator())->getMock(WriteResult::class)
-            ->expects(TestCase::once())
-            ->method('getModifiedCount')
-            ->willReturn((int) $hit)
-        ;
-
-        return $writeResult;
+        return new WriteResultMock(0, (int) $hit);
     }
 }

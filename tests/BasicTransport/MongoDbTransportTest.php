@@ -5,6 +5,7 @@ namespace ApacheBorys\Retry\BasicTransport\Tests;
 
 use ApacheBorys\Retry\BasicTransport\Tests\MongoDbTransport\MongoDbTransportForTest;
 use ApacheBorys\Retry\BasicTransport\Tests\MongoDbTransport\MongoManagerMock;
+use ApacheBorys\Retry\Entity\Message;
 use ApacheBorys\Retry\Interfaces\Transport;
 
 class MongoDbTransportTest implements TestTransportInterface
@@ -30,13 +31,21 @@ class MongoDbTransportTest implements TestTransportInterface
         return true;
     }
 
+    /** @return Message[] */
     public function getMessagesFromDb(): array
     {
-        // TODO: Implement getMessagesFromDb() method.
+        $messages = [];
+        foreach ($this->manager->getStorage()['testCollection'] as $item) {
+            $item['id'] = $item['_id'];
+            unset($item['_id']);
+
+            $messages[] = Message::fromArray($item);
+        }
+
+        return $messages;
     }
 
     public function tearDownAfterClass(): void
     {
-        // TODO: Implement tearDownAfterClass() method.
     }
 }
