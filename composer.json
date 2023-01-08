@@ -1,0 +1,44 @@
+{
+    "name": "apacheborys/re-try-php-basics-lib",
+    "description": "Basic transport and executor interface implementations, according apacheborys/re-try-php library",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Borys Yermokhin",
+            "email": "borys_ermokhin@yahoo.com"
+        }
+    ],
+    "require": {
+        "php": "^7.4||^8.0",
+        "apacheborys/re-try-php": "*",
+        "psr/log": "^1.1"
+    },
+    "require-dev": {
+        "ext-mongodb": "*",
+        "ext-json": "*",
+        "ext-pdo": "*",
+        "ext-inotify": "*",
+        "ext-memcached": "*",
+        "phpunit/phpunit": "9.5.21",
+        "vimeo/psalm": "^4.30"
+    },
+    "scripts": {
+        "test": [
+            "./vendor/bin/psalm",
+            "php vendor/bin/phpunit tests"
+        ]
+    },
+    "autoload": {
+        "psr-4": {
+            "ApacheBorys\\Retry\\BasicTransport\\": "src/BasicTransport",
+            "ApacheBorys\\Retry\\BasicExecutor\\": "src/BasicExecutor"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "ApacheBorys\\Retry\\BasicExecutor\\Tests\\": "tests/BasicExecutor",
+            "ApacheBorys\\Retry\\BasicTransport\\Tests\\": "tests/BasicTransport"
+        }
+    }
+}
