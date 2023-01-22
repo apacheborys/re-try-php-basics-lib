@@ -71,7 +71,7 @@ class FileTransport implements Transport
 
         $returnedItems = 0;
 
-        foreach ($this->fileIndexProcessed[0] as $position) {
+        foreach ($this->fileIndexProcessed[0] ?? [] as $position) {
             fseek($this->fp, $position + 1);
             $rawMessage = fgets($this->fp);
 
