@@ -103,7 +103,7 @@ class CommandExecutor implements Executor
         $id = getenv(self::ALIAS_FOR_CORRELATION_ID);
 
         if (!$id) {
-            $config->getTransport()->getNextId($exception, $config);
+            $id = $config->getTransport()->getNextId($exception, $config);
         }
 
         return (string) $id;
