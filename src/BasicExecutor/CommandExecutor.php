@@ -6,6 +6,7 @@ namespace ApacheBorys\Retry\BasicExecutor;
 use ApacheBorys\Retry\Entity\Config;
 use ApacheBorys\Retry\Entity\Message;
 use ApacheBorys\Retry\Interfaces\Executor;
+use Throwable;
 
 class CommandExecutor implements Executor
 {
@@ -67,7 +68,7 @@ class CommandExecutor implements Executor
             }
 
             $returnValue = proc_close($process);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->rollbackEnvironmentVariables();
 
             throw $e;
@@ -79,26 +80,30 @@ class CommandExecutor implements Executor
         return $returnValue !== -1;
     }
 
-    public function compilePayload(\Throwable $exception, Config $config): array
+    public function compilePayload(Throwable $exception, Config $config): array
     {
         $result = [];
 
         foreach ($this->arguments as $argName => $argRegExp) {
-            preg_match($argRegExp, $exception->getMessage(), $matches);
-            if ($matches && isset($matches[0])) {
-                $result[$argName] = $matches[0];
+            $matches = [];
+
+            try {
+                preg_match($argRegExp, $exception->getMessage(), $matches);
+            } catch (Throwable $e) {
             }
+
+            $result[$argName] = count($matches) > 0 ? $matches[0] : $argRegExp;
         }
 
         return $result;
     }
 
-    public function getCorrelationId(\Throwable $exception, Config $config): string
+    public function getCorrelationId(Throwable $exception, Config $config): string
     {
         $id = getenv(self::ALIAS_FOR_CORRELATION_ID);
 
         if (!$id) {
-            $config->getTransport()->getNextId($exception, $config);
+            $id = $config->getTransport()->getNextId($exception, $config);
         }
 
         return (string) $id;
