@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "5fddbf4e5a06505d74116f83d919a186",
+    "content-hash": "68a98cfe250e3c724d6e257ed6f9c4bd",
     "packages": [
         {
             "name": "apacheborys/re-try-php",
