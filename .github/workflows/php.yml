@@ -1,4 +1,7 @@
 name: PHP Composer
+with:
+  php-version: 7.4
+  extensions: inotify
 
 on:
   push:
@@ -13,8 +16,7 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
-    env:
-      extensions: inotify
+
     steps:
     - uses: actions/checkout@v3
 
