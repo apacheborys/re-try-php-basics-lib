@@ -1,7 +1,4 @@
 name: PHP Composer
-with:
-  php-version: 7.4
-  extensions: inotify
 
 on:
   push:
@@ -22,6 +19,9 @@ jobs:
 
     - name: Validate composer.json and composer.lock
       run: composer validate --strict
+      with:
+        php-version: 7.4
+        extensions: inotify
 
     - name: Cache Composer packages
       id: composer-cache
