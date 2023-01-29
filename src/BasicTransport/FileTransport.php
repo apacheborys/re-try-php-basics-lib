@@ -212,7 +212,7 @@ class FileTransport implements Transport
 
         fseek($this->fp, 0);
 
-        $previous = 1;
+        $previous = 0;
         while ($rawMessage = fgets($this->fp)) {
             $message = Message::fromArray(json_decode($rawMessage, true,512, JSON_THROW_ON_ERROR));
             $this->addToIndex($message, $previous - 1);
