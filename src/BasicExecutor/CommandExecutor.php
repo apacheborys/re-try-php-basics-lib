@@ -16,7 +16,7 @@ class CommandExecutor implements Executor
     private array $arguments;
     private array $environmentVars;
     private ?string $cwd;
-    private ?array $envVariablesSnapshot = null;
+    private array $envVariablesSnapshot;
     private ?LoggerInterface $logger;
 
     /**
