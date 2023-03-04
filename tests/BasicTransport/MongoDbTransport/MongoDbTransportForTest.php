@@ -20,13 +20,13 @@ class MongoDbTransportForTest extends MongoDbTransport
         $this->namespace = $namespace;
     }
 
-    protected function getNewBulkWrite(): object
+    public function getNewBulkWrite(): object
     {
         $this->lastBulkWrite = new BulkWriteMock();
         return $this->lastBulkWrite;
     }
 
-    protected function getNewQuery(array $arguments, array $options = []): object
+    public function getNewQuery(array $arguments, array $options = []): object
     {
         $this->lastQueryMock = new QueryMock($arguments, $options);
         return $this->lastQueryMock;

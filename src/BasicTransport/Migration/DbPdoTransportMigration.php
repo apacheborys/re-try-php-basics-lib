@@ -12,17 +12,32 @@ class DbPdoTransportMigration implements Migration
 
     private string $tableName;
 
+    private string $migrationTableName;
+
     private ?string $dbName;
 
-    public function __construct(PDO $pdo, string $tableName = DbPdoTransport::DEFAULT_TABLE_NAME, ?string $dbName = null)
-    {
+    public function __construct(
+        PDO $pdo,
+        string $tableName = DbPdoTransport::DEFAULT_TABLE_NAME,
+        string $migrationTableName = DbPdoTransport::DEFAULT_MIGRATION_TABLE_NAME,
+        ?string $dbName = null
+    ) {
         $this->pdo = $pdo;
         $this->tableName = $tableName;
+        $this->migrationTableName = $migrationTableName;
         $this->dbName = $dbName;
     }
 
     public function run(): bool
     {
+        $sql = sprintf(
+            "CREATE TABLE %s (version INT, executedAt DATETIME DEFAULT NOW, PRIMARY KEY version)",
+            $this->compileDbAndTableName($this->migrationTableName)
+        );
+
+        $st = $this->pdo->prepare($sql);
+        $createMigrationTable = $st->execute();
+
         $sql = sprintf(
             "CREATE TABLE %s (
     %s CHAR(36),
@@ -36,7 +51,7 @@ class DbPdoTransportMigration implements Migration
     %s DATETIME DEFAULT NOW,
     PRIMARY KEY (%s, %s)
 )",
-            $this->compileDbAndTableName(),
+            $this->compileDbAndTableName($this->tableName),
             DbPdoTransport::COLUMN_ID,
             DbPdoTransport::COLUMN_RETRY_NAME,
             DbPdoTransport::COLUMN_CORRELATION_ID,
@@ -55,7 +70,7 @@ class DbPdoTransportMigration implements Migration
         $sql = sprintf(
             "CREATE INDEX idx_is_process_%s ON %s (%s)",
             $this->tableName,
-            $this->compileDbAndTableName(),
+            $this->compileDbAndTableName($this->tableName),
             DbPdoTransport::COLUMN_IS_PROCESSED
         );
 
@@ -65,26 +80,60 @@ class DbPdoTransportMigration implements Migration
         $sql = sprintf(
             "CREATE INDEX idx_correlation_id_%s ON %s (%s)",
             $this->tableName,
-            $this->compileDbAndTableName(),
+            $this->compileDbAndTableName($this->tableName),
             DbPdoTransport::COLUMN_CORRELATION_ID
         );
 
         $st = $this->pdo->prepare($sql);
         $createIndexCorrelationId = $st->execute();
 
-        return $createTable && $createIndexIsProcessed && $createIndexCorrelationId;
+        $sql = sprintf("INSERT INTO %s (version) VALUES (%d)", $this->compileDbAndTableName($this->migrationTableName), $this->version());
+
+        $st = $this->pdo->prepare($sql);
+        $insertMigrationRow = $st->execute();
+
+        return $createMigrationTable && $createTable && $createIndexIsProcessed && $createIndexCorrelationId && $insertMigrationRow;
     }
 
     public function rollback(): bool
     {
-        $sql = "DROP TABLE IF EXISTS " . $this->compileDbAndTableName() . ";";
+        $sql = "DROP TABLE IF EXISTS " . $this->compileDbAndTableName($this->tableName) . ";";
         $st = $this->pdo->prepare($sql);
 
-        return $st->execute();
+        $table = $st->execute();
+
+        $sql = "DROP TABLE IF EXISTS " . $this->compileDbAndTableName($this->migrationTableName) . ";";
+        $st = $this->pdo->prepare($sql);
+
+        $migrationTable = $st->execute();
+
+        return $table && $migrationTable;
     }
 
-    private function compileDbAndTableName(): string
+    public function version(): int
     {
-        return is_null($this->dbName) ? $this->tableName : $this->dbName . '.' . $this->tableName;
+        return 1;
+    }
+
+    public function support(): array
+    {
+        return [DbPdoTransport::class];
+    }
+
+    public function wasExecuted(): bool
+    {
+        $sql = sprintf(
+            "SELECT COUNT(*) FROM %s WHERE version = %d",
+            $this->compileDbAndTableName($this->migrationTableName),
+            $this->version()
+        );
+        $res = $this->pdo->query($sql);
+
+        return $res->fetchColumn() != 0;
+    }
+
+    private function compileDbAndTableName(string $tableName): string
+    {
+        return is_null($this->dbName) ? $tableName : $this->dbName . '.' . $tableName;
     }
 }
