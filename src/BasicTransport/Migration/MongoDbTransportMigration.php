@@ -7,7 +7,7 @@ use ApacheBorys\Retry\BasicTransport\MongoDbTransport;
 use ApacheBorys\Retry\Entity\Message;
 use MongoDB\Driver\Manager;
 
-class MongoDbTransportMigration implements Migration
+class MongoDbTransportMigration implements MigrationInterface
 {
     private Manager $mongoManager;
 
@@ -39,6 +39,7 @@ class MongoDbTransportMigration implements Migration
 
         $bulkWrite = $this->mongoDbTransport->getNewBulkWrite();
 
+        /** @psalm-suppress InvalidScalarArgument */
         $bulkWrite->insert($doc);
         $result = $this->mongoManager->executeBulkWrite($this->migrationNamespace, $bulkWrite);
 

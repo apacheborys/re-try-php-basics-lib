@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace ApacheBorys\Retry\BasicTransport\Migration;
 
-interface Migration
+interface MigrationInterface
 {
     public function run(): bool;
 

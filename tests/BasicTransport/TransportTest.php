@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace ApacheBorys\Retry\BasicTransport\Tests;
 
+use ApacheBorys\Retry\BasicTransport\Migration\MigrationInterface;
 use ApacheBorys\Retry\Entity\Config;
 use ApacheBorys\Retry\Entity\Message;
 use ApacheBorys\Retry\Interfaces\Transport;

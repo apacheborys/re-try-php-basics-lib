@@ -17,6 +17,7 @@
         <PossiblyInvalidArgument>
             <errorLevel type="suppress">
                 <file name="src/BasicTransport/MongoDbTransport.php" />
+                <file name="src/BasicTransport/Migration/MongoDbTransportMigration.php" />
             </errorLevel>
         </PossiblyInvalidArgument>
     </issueHandlers>

@@ -31,4 +31,9 @@ class BulkWriteMock
     {
         return $this->actionSnapshot;
     }
+
+    public function delete(array $filter): void
+    {
+        $this->actionSnapshot['delete'] = $filter;
+    }
 }

@@ -16,7 +16,8 @@ class CommandExecutor implements Executor
     private array $arguments;
     private array $environmentVars;
     private ?string $cwd;
-    private array $envVariablesSnapshot;
+    /** @var string[] $envVariablesSnapshot */
+    private array $envVariablesSnapshot = [];
     private ?LoggerInterface $logger;
 
     /**
@@ -150,11 +151,11 @@ class CommandExecutor implements Executor
 
     private function rollbackEnvironmentVariables(): void
     {
-        foreach ($this->envVariablesSnapshot ?? [] as $varName => $value) {
+        foreach ($this->envVariablesSnapshot as $varName => $value) {
             putenv($varName . '=' . $value);
         }
 
-        $envVarsToUnset = array_diff_assoc($this->environmentVars, $this->envVariablesSnapshot ?? []);
+        $envVarsToUnset = array_diff_assoc($this->environmentVars, $this->envVariablesSnapshot);
 
         foreach ($envVarsToUnset as $varName => $value) {
             putenv($varName);

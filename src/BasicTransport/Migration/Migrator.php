@@ -5,7 +5,7 @@ namespace ApacheBorys\Retry\BasicTransport\Migration;
 
 class Migrator
 {
-    public function checkAndExecuteMigrations(array $context, string $transportClass)
+    public function checkAndExecuteMigrations(array $context, string $transportClass): void
     {
         $migrations = $this->getAllMigrationsForTransport($context, $transportClass);
 
@@ -17,18 +17,19 @@ class Migrator
     }
 
     /**
-     * @return Migration[]
+     * @return MigrationInterface[]
      */
     private function getAllMigrationsForTransport(array $context, string $transportClass): array
     {
         $migrations = [];
 
         foreach (get_declared_classes() as $className) {
-            if (in_array(Migration::class, class_implements($className))) {
+            if (in_array(MigrationInterface::class, class_implements($className))) {
                 $migrations[] = $className;
             }
         }
 
+        /** @var MigrationInterface[] $migrations */
         $migrations = array_map(
             static function (string $migration) use ($context) {
                 return new $migration(...$context);
@@ -36,10 +37,9 @@ class Migrator
             $migrations
         );
 
-        /** @var Migration[] $migrations */
         $migrations = array_filter(
             $migrations,
-            static function (Migration $migration) use ($transportClass) {
+            static function (MigrationInterface $migration) use ($transportClass) {
                 return in_array($transportClass, $migration->support());
             }
         );

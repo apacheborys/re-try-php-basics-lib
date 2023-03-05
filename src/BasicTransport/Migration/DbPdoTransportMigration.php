@@ -6,7 +6,7 @@ namespace ApacheBorys\Retry\BasicTransport\Migration;
 use ApacheBorys\Retry\BasicTransport\DbPdoTransport;
 use PDO;
 
-class DbPdoTransportMigration implements Migration
+class DbPdoTransportMigration implements MigrationInterface
 {
     private PDO $pdo;
 
@@ -31,7 +31,7 @@ class DbPdoTransportMigration implements Migration
     public function run(): bool
     {
         $sql = sprintf(
-            "CREATE TABLE %s (version INT, executedAt DATETIME DEFAULT NOW, PRIMARY KEY version)",
+            "CREATE TABLE %s (version INT, executedAt DATETIME DEFAULT NOW, PRIMARY KEY (version))",
             $this->compileDbAndTableName($this->migrationTableName)
         );
 

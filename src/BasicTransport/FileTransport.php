@@ -73,13 +73,18 @@ class FileTransport implements Transport
 
         foreach ($this->fileIndexProcessed[0] ?? [] as $position) {
             fseek($this->fp, $position);
-            $rawMessage = trim(fgets($this->fp));
+            $rawMessage = fgets($this->fp);
 
-            if (strlen($rawMessage) === 0) {
+            if ($rawMessage === PHP_EOL) {
+                fseek($this->fp, $position + 1);
+                $rawMessage = fgets($this->fp);
+            }
+
+            if (strlen(trim($rawMessage)) === 0) {
                 continue;
             }
 
-            $message = Message::fromArray(json_decode($rawMessage, true,512, JSON_THROW_ON_ERROR));
+            $message = Message::fromArray(json_decode(trim($rawMessage), true,512, JSON_THROW_ON_ERROR));
 
             if (!$message->getIsProcessed()) {
                 yield $message;
