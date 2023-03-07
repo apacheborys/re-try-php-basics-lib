@@ -67,7 +67,7 @@ class MongoDbTransportMigration implements MigrationInterface
         return 1;
     }
 
-    public function support(): array
+    public static function support(): array
     {
         return [MongoDbTransport::class];
     }

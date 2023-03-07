@@ -24,7 +24,10 @@ class Migrator
         $migrations = [];
 
         foreach (get_declared_classes() as $className) {
-            if (in_array(MigrationInterface::class, class_implements($className))) {
+            if (
+                in_array(MigrationInterface::class, class_implements($className), true) &&
+                in_array($transportClass, $className::support(), true)
+            ) {
                 $migrations[] = $className;
             }
         }
@@ -35,13 +38,6 @@ class Migrator
                 return new $migration(...$context);
             },
             $migrations
-        );
-
-        $migrations = array_filter(
-            $migrations,
-            static function (MigrationInterface $migration) use ($transportClass) {
-                return in_array($transportClass, $migration->support());
-            }
         );
 
         $result = [];

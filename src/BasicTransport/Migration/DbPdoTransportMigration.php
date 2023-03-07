@@ -115,7 +115,7 @@ class DbPdoTransportMigration implements MigrationInterface
         return 1;
     }
 
-    public function support(): array
+    public static function support(): array
     {
         return [DbPdoTransport::class];
     }
@@ -127,9 +127,14 @@ class DbPdoTransportMigration implements MigrationInterface
             $this->compileDbAndTableName($this->migrationTableName),
             $this->version()
         );
-        $res = $this->pdo->query($sql);
 
-        return $res->fetchColumn() != 0;
+        try {
+            $res = $this->pdo->query($sql);
+
+            return $res->fetchColumn() != 0;
+        } catch (\PDOException $e) {
+            return false;
+        }
     }
 
     private function compileDbAndTableName(string $tableName): string

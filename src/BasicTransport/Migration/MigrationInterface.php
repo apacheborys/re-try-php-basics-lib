@@ -12,7 +12,7 @@ interface MigrationInterface
     public function version(): int;
 
     /** @return string[] Transport classes what support current migration */
-    public function support(): array;
+    public static function support(): array;
 
     public function wasExecuted(): bool;
 }
