@@ -142,7 +142,7 @@ class FileTransport implements Transport
 
         $correlationId = $config->getExecutor()->getCorrelationId($exception, $config);
 
-        $keysFromIndex = array_keys($this->fileIndexPosition[$correlationId]);
+        $keysFromIndex = array_keys($this->fileIndexPosition[$correlationId] ?? []);
 
         return isset($this->fileIndexPosition[$correlationId]) && count($keysFromIndex) > 0 ? max($keysFromIndex) : 0;
     }

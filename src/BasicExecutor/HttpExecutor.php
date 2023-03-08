@@ -97,7 +97,7 @@ class HttpExecutor implements Executor
         $id = $_SERVER['HTTP_' . self::CID] ?? apache_request_headers()[self::CID] ?? null;
 
         if (!$id) {
-            $config->getTransport()->getNextId($exception, $config);
+            $id = $config->getTransport()->getNextId($exception, $config);
         }
 
         return (string) $id;
