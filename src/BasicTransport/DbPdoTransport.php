@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace ApacheBorys\Retry\BasicTransport;
 
+use ApacheBorys\Retry\BasicTransport\Migration\Migrator;
 use ApacheBorys\Retry\Entity\Config;
 use ApacheBorys\Retry\Entity\Message;
 use ApacheBorys\Retry\Interfaces\Transport;
@@ -13,6 +14,7 @@ class DbPdoTransport implements Transport
     use UuidGenerator;
 
     public const DEFAULT_TABLE_NAME = 'retry_exchange';
+    public const DEFAULT_MIGRATION_TABLE_NAME = 'retry_migration';
 
     public const COLUMN_ID = Message::ELEM_ID;
     public const COLUMN_RETRY_NAME = Message::ELEM_RETRY_NAME;
@@ -41,11 +43,18 @@ class DbPdoTransport implements Transport
 
     private ?string $dbName;
 
-    public function __construct(PDO $pdo, string $tableName = self::DEFAULT_TABLE_NAME, ?string $dbName = null)
-    {
+    public function __construct(
+        PDO $pdo,
+        string $tableName = self::DEFAULT_TABLE_NAME,
+        string $migrationTableName = self::DEFAULT_MIGRATION_TABLE_NAME,
+        ?string $dbName = null
+    ) {
         $this->pdo = $pdo;
         $this->tableName = $tableName;
         $this->dbName = $dbName;
+
+        $migrator = new Migrator();
+        $migrator->checkAndExecuteMigrations([$pdo, $tableName, $migrationTableName, $dbName], self::class);
     }
 
     public function send(Message $message): bool

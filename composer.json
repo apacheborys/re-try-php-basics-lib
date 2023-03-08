@@ -32,7 +32,8 @@
     "autoload": {
         "psr-4": {
             "ApacheBorys\\Retry\\BasicTransport\\": "src/BasicTransport",
-            "ApacheBorys\\Retry\\BasicExecutor\\": "src/BasicExecutor"
+            "ApacheBorys\\Retry\\BasicExecutor\\": "src/BasicExecutor",
+            "ApacheBorys\\Retry\\Common\\": "src/Common"
         }
     },
     "autoload-dev": {
