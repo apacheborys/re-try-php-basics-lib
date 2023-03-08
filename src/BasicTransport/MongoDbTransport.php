@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace ApacheBorys\Retry\BasicTransport;
 
+use ApacheBorys\Retry\BasicTransport\Migration\Migrator;
 use ApacheBorys\Retry\BasicTransport\Tests\MongoDbTransport\BulkWriteMock;
 use ApacheBorys\Retry\BasicTransport\Tests\MongoDbTransport\MongoManagerMock;
 use ApacheBorys\Retry\BasicTransport\Tests\MongoDbTransport\QueryMock;
@@ -15,6 +16,9 @@ use MongoDB\Driver\Query;
 
 class MongoDbTransport implements Transport
 {
+    public const DEFAULT_NAMESPACE = 'retry_exchange';
+    public const DEFAULT_MIGRATION_NAMESPACE = 'retry_migration';
+
     use UuidGenerator;
 
     /** @var Manager|MongoManagerMock */
@@ -22,10 +26,16 @@ class MongoDbTransport implements Transport
 
     protected string $namespace;
 
-    public function __construct(Manager $mongoManager, string $namespace)
-    {
+    public function __construct(
+        Manager $mongoManager,
+        string $namespace = self::DEFAULT_NAMESPACE,
+        string $migrationNamespace = self::DEFAULT_MIGRATION_NAMESPACE
+    ) {
         $this->mongoManager = $mongoManager;
         $this->namespace = $namespace;
+
+        $migrator = new Migrator();
+        $migrator->checkAndExecuteMigrations([$mongoManager, $namespace, $migrationNamespace, $this], self::class);
     }
 
     public function send(Message $message): bool
@@ -114,7 +124,7 @@ class MongoDbTransport implements Transport
     /**
      * @return BulkWrite|BulkWriteMock
      */
-    protected function getNewBulkWrite(): object
+    public function getNewBulkWrite(): object
     {
         return new BulkWrite();
     }
@@ -122,7 +132,7 @@ class MongoDbTransport implements Transport
     /**
      * @return Query|QueryMock
      */
-    protected function getNewQuery(array $arguments, array $options = []): object
+    public function getNewQuery(array $arguments, array $options = []): object
     {
         return new Query($arguments, $options);
     }

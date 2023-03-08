@@ -6,6 +6,7 @@ namespace ApacheBorys\Retry\BasicExecutor;
 use ApacheBorys\Retry\Entity\Config;
 use ApacheBorys\Retry\Entity\Message;
 use ApacheBorys\Retry\Interfaces\Executor;
+use Psr\Log\LoggerInterface;
 use Throwable;
 
 class CommandExecutor implements Executor
@@ -16,7 +17,9 @@ class CommandExecutor implements Executor
     private array $arguments;
     private array $environmentVars;
     private ?string $cwd;
-    private ?array $envVariablesSnapshot = null;
+    /** @var string[] $envVariablesSnapshot */
+    private array $envVariablesSnapshot = [];
+    private ?LoggerInterface $logger;
 
     /**
      * @param string $commandAddress                    First operand after php
@@ -24,12 +27,18 @@ class CommandExecutor implements Executor
      * @param string|null $cwd                          The initial working dir for the command
      * @param array<String, String> $environmentVars    Set of env variables to execute command. It will be set before execution and rolled back after
      */
-    public function __construct(string $commandAddress, array $arguments = [], ?string $cwd = null, array $environmentVars = [])
-    {
+    public function __construct(
+        string $commandAddress,
+        array $arguments = [],
+        ?string $cwd = null,
+        array $environmentVars = [],
+        ?LoggerInterface $logger = null
+    ) {
         $this->commandAddress = $commandAddress;
         $this->arguments = $arguments;
         $this->cwd = $cwd;
         $this->environmentVars = $environmentVars;
+        $this->logger = $logger;
     }
 
     public function handle(Message $message): bool
@@ -70,14 +79,22 @@ class CommandExecutor implements Executor
             $returnValue = proc_close($process);
         } catch (Throwable $e) {
             $this->rollbackEnvironmentVariables();
+            if ($this->logger) {
+                $this->logger->debug(
+                    sprintf(
+                        'Command executor in Retry library catch exception during execution of command. Error: %s',
+                        $e->getMessage()
+                    )
+                );
+            }
 
-            throw $e;
+            return false;
         }
 
         $this->rollbackEnvironmentVariables();
         putenv(self::ALIAS_FOR_CORRELATION_ID);
 
-        return $returnValue !== -1;
+        return true;
     }
 
     public function compilePayload(Throwable $exception, Config $config): array
@@ -139,11 +156,11 @@ class CommandExecutor implements Executor
 
     private function rollbackEnvironmentVariables(): void
     {
-        foreach ($this->envVariablesSnapshot ?? [] as $varName => $value) {
+        foreach ($this->envVariablesSnapshot as $varName => $value) {
             putenv($varName . '=' . $value);
         }
 
-        $envVarsToUnset = array_diff_assoc($this->environmentVars, $this->envVariablesSnapshot ?? []);
+        $envVarsToUnset = array_diff_assoc($this->environmentVars, $this->envVariablesSnapshot);
 
         foreach ($envVarsToUnset as $varName => $value) {
             putenv($varName);

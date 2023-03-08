@@ -22,9 +22,6 @@ class DbPdoTransportTest implements TestTransportInterface
 
         $this->pdo = new \PDO('sqlite:' . self::DB_FILE_NAME);
         $this->pdo->setAttribute( \PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-
-        $migration = new DbPdoTransportMigration($this->pdo);
-        $migration->run();
     }
 
     public function setUpBeforeClass(): void

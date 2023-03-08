@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace ApacheBorys\Retry\BasicTransport\Tests;
 
+use ApacheBorys\Retry\Common\WarmUpService;
 use ApacheBorys\Retry\Entity\Config;
 use ApacheBorys\Retry\Entity\Message;
 use ApacheBorys\Retry\Interfaces\Transport;
@@ -29,6 +30,9 @@ class TransportTest extends TestCase
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
+
+        $warmUp = new WarmUpService();
+        $warmUp->registerAllClasses();
 
         foreach (self::getTestsForTransports() as $transport) {
             $transport->setUpBeforeClass();

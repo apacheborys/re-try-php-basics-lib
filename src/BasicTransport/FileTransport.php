@@ -72,10 +72,19 @@ class FileTransport implements Transport
         $returnedItems = 0;
 
         foreach ($this->fileIndexProcessed[0] ?? [] as $position) {
-            fseek($this->fp, $position + 1);
+            fseek($this->fp, $position);
             $rawMessage = fgets($this->fp);
 
-            $message = Message::fromArray(json_decode($rawMessage, true,512, JSON_THROW_ON_ERROR));
+            if ($rawMessage === PHP_EOL) {
+                fseek($this->fp, $position + 1);
+                $rawMessage = fgets($this->fp);
+            }
+
+            if (strlen(trim($rawMessage)) === 0) {
+                continue;
+            }
+
+            $message = Message::fromArray(json_decode(trim($rawMessage), true,512, JSON_THROW_ON_ERROR));
 
             if (!$message->getIsProcessed()) {
                 yield $message;
@@ -212,7 +221,7 @@ class FileTransport implements Transport
 
         fseek($this->fp, 0);
 
-        $previous = 1;
+        $previous = 0;
         while ($rawMessage = fgets($this->fp)) {
             $message = Message::fromArray(json_decode($rawMessage, true,512, JSON_THROW_ON_ERROR));
             $this->addToIndex($message, $previous - 1);
