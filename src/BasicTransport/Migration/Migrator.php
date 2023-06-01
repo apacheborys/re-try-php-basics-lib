@@ -7,6 +7,9 @@ class Migrator
 {
     public function checkAndExecuteMigrations(array $context, string $transportClass): void
     {
+        include_once ('DbPdoTransportMigration.php');
+        include_once ('MongoDbTransportMigration.php');
+
         $migrations = $this->getAllMigrationsForTransport($context, $transportClass);
 
         foreach ($migrations as $migration) {
