@@ -123,7 +123,7 @@ class CommandExecutor implements Executor
             $id = $config->getTransport()->getNextId($exception, $config);
         }
 
-        return (string) $id;
+        return $id;
     }
 
     private function compileArguments(Message $message): string

@@ -35,6 +35,7 @@ class DbPdoTransport implements Transport
         self::COLUMN_IS_PROCESSED,
         self::COLUMN_SHOULD_BE_EXECUTED_AT,
         self::COLUMN_EXECUTOR,
+        self::COLUMN_CREATED_AT,
     ];
 
     private PDO $pdo;
@@ -74,6 +75,7 @@ class DbPdoTransport implements Transport
         $isProcessed = $message->getIsProcessed();
         $shouldBeExecutedAt = $message->getShouldBeExecutedAt()->format('c');
         $executor = $message->getExecutor();
+        $createdAt = (new \DateTimeImmutable())->setTimezone(new \DateTimeZone('UTC'))->format('c');
 
         $st = $this->pdo->prepare($sql);
         $st->bindParam(self::COLUMN_ID, $id);
@@ -84,6 +86,7 @@ class DbPdoTransport implements Transport
         $st->bindParam(self::COLUMN_IS_PROCESSED, $isProcessed, PDO::PARAM_BOOL);
         $st->bindParam(self::COLUMN_SHOULD_BE_EXECUTED_AT, $shouldBeExecutedAt);
         $st->bindParam(self::COLUMN_EXECUTOR, $executor);
+        $st->bindParam(self::COLUMN_CREATED_AT, $createdAt);
 
         return $st->execute();
     }
