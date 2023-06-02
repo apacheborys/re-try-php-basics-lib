@@ -18,7 +18,7 @@ jobs:
     - uses: actions/checkout@v3
 
     - name: Install dependencies
-      run: composer install --prefer-dist --no-progress --ignore-platform-req=ext-memcached --ignore-platform-req=ext-inotify
+      run: composer install --prefer-dist --no-progress --ignore-platform-req=ext-inotify --ignore-platform-req=ext-memcached
 
     - name: Update dependencies
       run: composer update
