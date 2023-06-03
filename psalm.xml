@@ -20,5 +20,10 @@
                 <file name="src/BasicTransport/Migration/MongoDbTransportMigration.php" />
             </errorLevel>
         </PossiblyInvalidArgument>
+        <UnresolvableInclude>
+            <errorLevel type="suppress">
+                <file name="src/Common/WarmUpService.php" />
+            </errorLevel>
+        </UnresolvableInclude>
     </issueHandlers>
 </psalm>

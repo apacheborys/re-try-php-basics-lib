@@ -48,7 +48,7 @@ class DbPdoTransportMigration implements MigrationInterface
     %s TINYINT,
     %s DATETIME,
     %s VARCHAR(1023),
-    %s DATETIME DEFAULT NOW,
+    %s DATETIME,
     PRIMARY KEY (%s, %s)
 )",
             $this->compileDbAndTableName($this->tableName),

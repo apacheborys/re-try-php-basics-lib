@@ -11,14 +11,13 @@
     ],
     "require": {
         "php": "^7.4||^8.0",
-        "apacheborys/re-try-php": "*",
+        "apacheborys/re-try-php": "^0.15",
         "psr/log": "^1.1"
     },
     "require-dev": {
         "ext-mongodb": "*",
         "ext-json": "*",
         "ext-pdo": "*",
-        "ext-inotify": "*",
         "ext-memcached": "*",
         "phpunit/phpunit": "9.5.21",
         "vimeo/psalm": "^4.30"
