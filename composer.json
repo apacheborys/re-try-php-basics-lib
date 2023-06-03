@@ -11,7 +11,7 @@
     ],
     "require": {
         "php": "^7.4||^8.0",
-        "apacheborys/re-try-php": "^0.15.*",
+        "apacheborys/re-try-php": "^0.15",
         "psr/log": "^1.1"
     },
     "require-dev": {
